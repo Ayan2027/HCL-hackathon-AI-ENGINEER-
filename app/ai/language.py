@@ -35,6 +35,10 @@ TRANSLATIONS: Dict[str, str] = {
     "kala": "black", "kaala": "black", "neela": "blue", "laal": "red", "safed": "white",
     "hara": "green", "peela": "yellow", "garmi": "summer", "sardi": "winter", "khana": "cooking",
     "rasoi": "kitchen", "baal": "hair", "chehra": "face", "dhoop": "sunscreen",
+    "chadar": "bedsheet", "chaddar": "bedsheet", "takiya": "pillow", "parda": "curtain", "parde": "curtains",
+    "kalai": "wrist", "bartan": "utensils", "katori": "bowl", "thali": "plate", "gilas": "glass",
+    "botal": "bottle", "kambal": "blanket", "tauliya": "towel", "kaleen": "carpet", "dari": "rug",
+    "ghadiyan": "watch", "ghadiya": "watch", "mobile": "mobile", "kavar": "cover",
     # Devanagari
     "सस्ता": "cheap", "सस्ती": "cheap", "सस्ते": "cheap", "जूते": "shoes", "जूता": "shoes",
     "चप्पल": "sandals", "कपड़े": "clothes", "कमीज": "shirt", "कमीज़": "shirt", "घड़ी": "watch",
@@ -45,6 +49,12 @@ TRANSLATIONS: Dict[str, str] = {
     "काला": "black", "नीला": "blue", "लाल": "red", "सफेद": "white", "हरा": "green",
     "फेस": "face", "वॉश": "wash", "शैम्पू": "shampoo", "क्रीम": "cream", "जूतों": "shoes",
     "स्पीकरों": "speaker", "हेडफोन": "headphones", "ईयरफोन": "earphones", "घड़ियाँ": "watch",
+    "घड़ियां": "watch", "चादर": "bedsheet", "तकिया": "pillow", "पर्दा": "curtain", "पर्दे": "curtains",
+    "कवर": "cover", "मोबाइल": "mobile", "चार्जर": "charger", "माउस": "mouse", "कीबोर्ड": "keyboard",
+    "मग": "mug", "बोतल": "bottle", "गिलास": "glass", "कप": "cup", "कटोरी": "bowl", "थाली": "plate",
+    "बर्तन": "utensils", "तौलिया": "towel", "कालीन": "carpet", "कंबल": "blanket", "कुशन": "cushion",
+    "पाउच": "pouch", "राउटर": "router", "पेन": "pen", "ड्राइव": "drive", "लिपस्टिक": "lipstick",
+    "परफ्यूम": "perfume", "डियोडरेंट": "deodorant", "तेल": "oil", "बाल": "hair", "रंग": "color",
 }
 
 # Fixed reply templates. {placeholders} are filled by code with catalogue facts.
@@ -60,9 +70,9 @@ PHRASES: Dict[str, Dict[str, str]] = {
         "hi": "यह हमारे कैटलॉग में नहीं मिला{why}। क्या मैं खोज थोड़ी बढ़ा दूँ?",
     },
     "out_of_scope": {
-        "en": "I couldn't find that in our catalogue - we sell electronics, footwear, apparel, sports & outdoor gear, home & kitchen and beauty products.",
-        "hinglish": "Ye hamare catalogue mein nahi hai - hum electronics, footwear, kapde, sports & outdoor, home & kitchen aur beauty products bechte hain.",
-        "hi": "यह हमारे कैटलॉग में नहीं है - हम इलेक्ट्रॉनिक्स, फुटवियर, कपड़े, स्पोर्ट्स, होम-किचन और ब्यूटी उत्पाद बेचते हैं।",
+        "en": "I couldn't find that in our catalogue - we sell {categories}.",
+        "hinglish": "Ye hamare catalogue mein nahi hai - hum ye categories bechte hain: {categories}.",
+        "hi": "यह हमारे कैटलॉग में नहीं है - हमारी श्रेणियाँ: {categories}।",
     },
     "privacy": {
         "en": "Sorry, I can't share another shopper's information. I can only help with your own orders and our catalogue.",
@@ -104,6 +114,16 @@ PHRASES: Dict[str, Dict[str, str]] = {
         "hinglish": "Ye raha catalogue se side-by-side comparison.",
         "hi": "कैटलॉग से तुलना यह रही।",
     },
+    "compare_missing": {
+        "en": "I can only compare products we actually list. Not in our catalogue: {missing}. I won't guess details for products we don't sell.",
+        "hinglish": "Main sirf hamare catalogue ke products compare kar sakta hoon. Catalogue mein nahi hai: {missing}. Jo hum nahi bechte, uski details main guess nahi karunga.",
+        "hi": "मैं केवल हमारे कैटलॉग के उत्पादों की तुलना कर सकता हूँ। कैटलॉग में नहीं है: {missing}। जो हम नहीं बेचते, उसकी जानकारी का अनुमान नहीं लगाऊँगा।",
+    },
+    "synthetic_orders": {
+        "en": "(Order history is synthetic demo data.)",
+        "hinglish": "(Order history synthetic demo data hai.)",
+        "hi": "(ऑर्डर इतिहास सिंथेटिक डेमो डेटा है।)",
+    },
     "no_orders": {
         "en": "You don't have any past orders with us yet.",
         "hinglish": "Aapka abhi tak koi purana order nahi hai.",
@@ -118,9 +138,9 @@ PHRASES: Dict[str, Dict[str, str]] = {
 
 CLARIFY_QUESTIONS: Dict[str, Dict[str, str]] = {
     "product_type": {
-        "en": "What kind of product are you looking for - for example shoes, a speaker, a backpack or kitchenware?",
-        "hinglish": "Aap kis type ka product dhoondh rahe hain - jaise shoes, speaker, backpack ya kitchen ka saamaan?",
-        "hi": "आप किस तरह का उत्पाद ढूँढ रहे हैं - जैसे जूते, स्पीकर, बैग या रसोई का सामान?",
+        "en": "What kind of product are you looking for - for example a phone cover, a wrist watch, a bedsheet or kitchenware?",
+        "hinglish": "Aap kis type ka product dhoondh rahe hain - jaise phone cover, ghadi, bedsheet ya kitchen ka saamaan?",
+        "hi": "आप किस तरह का उत्पाद ढूँढ रहे हैं - जैसे मोबाइल कवर, घड़ी, चादर या रसोई का सामान?",
     },
     "budget": {
         "en": "What's your budget?",

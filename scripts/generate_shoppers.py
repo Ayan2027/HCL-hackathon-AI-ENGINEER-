@@ -21,7 +21,7 @@ from datetime import date, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
-from app.config import BASE_DIR, CATEGORIES, reload_settings
+from app.config import BASE_DIR, LEGACY_CATEGORIES as CATEGORIES, reload_settings  # legacy generator
 from app.schemas import Customer, Order
 
 RAW = BASE_DIR / "data" / "raw"

@@ -16,7 +16,21 @@ load_dotenv(BASE_DIR / ".env")
 # ---------------------------------------------------------------------------
 # Shared constants (frozen contract - all members use these exact values)
 # ---------------------------------------------------------------------------
+# Categories of the ShopMate catalogue (data/shopmate_products.json). The live list
+# always comes from the database (repository.list_categories()); this constant is the
+# expected set used for validation and as a fallback.
 CATEGORIES = [
+    "Mobile & Tablet Accessories",
+    "Computers & Networking",
+    "Watches",
+    "Kitchen & Dining",
+    "Home Furnishing",
+    "Beauty & Personal Care",
+]
+
+# Categories of the earlier generated sample catalogue (data/raw, data/sample). Kept so
+# the legacy test fixture and archived order-history products still validate.
+LEGACY_CATEGORIES = [
     "Electronics",
     "Footwear",
     "Apparel",
@@ -36,7 +50,11 @@ ANSWER_TYPES = [
 
 LANGUAGES = ["en", "hi", "hinglish"]
 
-PRODUCT_ID_PATTERN = r"^P-\d{4}$"      # e.g. P-1001
+# ShopMate IDs (MOB001, BEAUTY048) and legacy sample IDs (P-1001, archived order history)
+PRODUCT_ID_PATTERN = r"^(?:P-\d{4}|[A-Z]{2,10}\d{3,4})$"
+# Product IDs written inside free text (shopper messages, LLM answers). Case-insensitive.
+CATALOG_ID_PREFIXES = ["MOB", "COMP", "WATCH", "KITCH", "HOME", "BEAUTY"]
+PRODUCT_ID_IN_TEXT = r"\b(?:P-\d{4}|(?:" + "|".join(CATALOG_ID_PREFIXES) + r")\d{3,4})\b"
 CUSTOMER_ID_PATTERN = r"^C-\d{3}$"     # e.g. C-001
 ORDER_ID_PATTERN = r"^O-\d{5}$"        # e.g. O-00001
 
@@ -84,6 +102,10 @@ class Settings:
         self.index_dir: Path = _path("INDEX_DIR", "data/index")
         self.sample_dir: Path = BASE_DIR / "data" / "sample"
         self.raw_dir: Path = BASE_DIR / "data" / "raw"
+        # ShopMate catalogue: JSON is the canonical source, CSV is used for cross-validation
+        self.catalog_json: Path = _path("CATALOG_JSON", "data/shopmate_products.json")
+        self.catalog_csv: Path = _path("CATALOG_CSV", "data/shopmate_products.csv")
+        self.backup_dir: Path = _path("BACKUP_DIR", "data/backups")
 
         # Retrieval
         self.embedding_model: str = os.getenv(

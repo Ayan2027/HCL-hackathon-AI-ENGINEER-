@@ -18,11 +18,13 @@ Pipeline (each step is recorded in the trace, R10):
 import logging
 import time
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from app.ai import clarify, intent as intent_mod, memory, responder
-from app.ai.language import detect_language, phrase
+from app.ai.language import detect_language, phrase, to_english_keywords, tokenize
 from app.ai.retrieval import build_query_text, hybrid_retrieve
+from app.ai.ranking import rank_products
+from app.ai.safety import check_message, sanitize_catalog_text
 from app.ai.ranking import product_type_gate, rank_products
 from app.ai.safety import check_message
 from app.ai.vector_index import get_vector_index
@@ -89,6 +91,11 @@ def vector_index_size() -> int:
     return get_vector_index().size
 
 
+def vector_status() -> str:
+    index = get_vector_index()
+    return "enabled" if index.enabled else (index.error or "not built")
+
+
 def handle_chat(request: ChatRequest) -> ChatResponse:
     turn = Turn(request)
     language = detect_language(request.message)
@@ -141,8 +148,10 @@ def _run_pipeline(turn: Turn, language: str):
                        "color": (p.get("attributes") or {}).get("color")} for i, p in enumerate(previous)]
     last_type = memory.last_answer_type(state)
     t0 = time.perf_counter()
+    categories = repo.list_categories()
     intent, source, note = intent_mod.extract_intent(
-        req.message, state, language, repo.list_brands(), repo.list_subcategories(), previous_brief, last_type)
+        req.message, state, language, repo.list_brands(), repo.list_subcategories(), previous_brief, last_type,
+        known_categories=categories, catalog_terms=repo.catalog_terms())
     turn.llm_used = source == "llm"
     if language == "en" and intent.language in {"hi", "hinglish"} and source == "llm":
         language = intent.language
@@ -158,7 +167,8 @@ def _run_pipeline(turn: Turn, language: str):
                         follow_up_question=phrase("greeting", language)), state
     if intent.intent == "out_of_scope":
         state.clarify_count = 0
-        return _respond(turn, "not_found", phrase("out_of_scope", language), language), state
+        return _respond(turn, "not_found", phrase("out_of_scope", language, categories=", ".join(categories)),
+                        language), state
     if intent.intent == "my_orders":
         state.clarify_count = 0
         return _my_orders(turn, language), state
@@ -240,18 +250,79 @@ def _search(turn: Turn, intent: Intent, state: SessionState, language: str, cont
     )
 
 
+def _lexical_match(side: str, product: Dict[str, Any]) -> bool:
+    """True if a content word of the comparison side appears as a whole word in the product's
+    name, brand, category or subcategory (prevents comparing a random 'similar' product)."""
+    words = [w for w in to_english_keywords(side) if len(w) > 2 and w not in intent_mod.FILLER_WORDS]
+    if not words:
+        return False
+    haystack = set(tokenize(" ".join(str(product.get(f) or "") for f in ("name", "brand", "category", "subcategory"))))
+    return any(w in haystack or w.rstrip("s") in haystack for w in words)
+
+
+def _resolve_target(side: str, intent: Intent, exclude: List[str]) -> Tuple[Optional[str], str]:
+    """One side of 'A vs B' -> (product_id or None, how it was resolved). Catalogue rows only."""
+    for pid in intent_mod.extract_product_ids(side):
+        if repo.get_product(pid) and pid not in exclude:
+            return pid, f"product id {pid}"
+    brands, _ = intent_mod.detect_brands(side, repo.list_brands())
+    brand_words = {w for b in brands for w in tokenize(b)}
+    shared = [k for k in intent.constraints.keywords if k not in brand_words]
+    if brands:
+        c = Constraints(brands=[brands[0]], category=intent.constraints.category, in_stock_only=False)
+        rest = [w for w in to_english_keywords(side) if w not in brand_words]
+        found, _ = hybrid_retrieve(build_query_text(" ".join(rest + shared) or brands[0], c), c)
+        kept, _ = tools.apply_filters(found, c)
+        if not kept:   # brand exists but no keyword/semantic hit: take its catalogue rows directly
+            kept, _ = tools.apply_filters(repo.get_all_products(), c)
+        for p in kept:
+            if p["product_id"] not in exclude:
+                return p["product_id"], f"brand {brands[0]}"
+        return None, f"brand {brands[0]} has no matching product"
+    c = Constraints(category=intent.constraints.category, in_stock_only=False)
+    query = " ".join(to_english_keywords(side)) or side
+    found, _ = hybrid_retrieve(query, c)
+    for p in found[:10]:
+        if p["product_id"] not in exclude and _lexical_match(side, p):
+            return p["product_id"], f"search '{query}'"
+    return None, "not in catalogue"
+
+
 def _compare(turn: Turn, intent: Intent, state: SessionState, language: str) -> ChatResponse:
     ids = memory.resolve_referenced_products(intent, state)
-    if len(ids) < 2 and not intent.referenced_positions and len(state.last_result_ids) >= 2 and not ids:
+    targets = intent_mod.extract_comparison_targets(turn.request.message)
+    unresolved: List[str] = []
+    if targets and len(ids) < 2:
+        # "Nike vs Adidas", "compare MOB001 and the Sitaram watch": resolve each named side
+        t0 = time.perf_counter()
+        resolved: Dict[str, str] = {}
+        for side in targets:
+            pid, how = _resolve_target(side, intent, ids)
+            resolved[side] = f"{pid or '-'} ({how})"
+            if pid:
+                ids.append(pid)
+            else:
+                unresolved.append(side)
+        turn.tool("resolve_comparison_targets", {"targets": targets}, "; ".join(f"{k} -> {v}" for k, v in resolved.items()), t0)
+    elif len(ids) < 2 and not intent.referenced_positions and len(state.last_result_ids) >= 2 and not ids:
         ids = state.last_result_ids[:2]                    # "compare them"
-    if len(ids) < 2 and len(intent.constraints.brands) >= 2:
-        # "compare Nike and Puma running shoes": best match per brand
+    if not targets and len(ids) < 2 and len(intent.constraints.brands) >= 2:
+        # "compare Sitaram and Desire watches" without clear sides: best match per brand
         for brand in intent.constraints.brands[:3]:
             c = intent.constraints.model_copy(update={"brands": [brand]})
             found, _ = hybrid_retrieve(build_query_text(intent.search_query_en, c), c)
             kept, _ = tools.apply_filters(found, c.model_copy(update={"in_stock_only": False}))
             if kept and kept[0]["product_id"] not in ids:
                 ids.append(kept[0]["product_id"])
+
+    if unresolved:
+        # Never substitute an unrelated product for something we do not sell
+        found = repo.get_products(ids)
+        msg = phrase("compare_missing", language, missing=", ".join(f"'{u}'" for u in unresolved))
+        turn.retrieved = [{"product_id": p["product_id"], "source": "comparison_target"} for p in found]
+        return _respond(turn, "not_found", msg, language,
+                        products=[responder.to_card(p, responder.template_reason(p, Constraints())) for p in found],
+                        sources=responder.to_sources(found, ["name", "brand"]))
     if len(ids) < 2:
         msg = phrase("compare_need_two", language)
         return _respond(turn, "clarification", msg, language, follow_up_question=msg)
@@ -333,10 +404,12 @@ def _product_question(turn: Turn, intent: Intent, state: SessionState, language:
                 value = ", ".join(str(v) for v in value)
             answer = f"{product['name']} ({product['product_id']}) - {label}: {value}."
         else:
+            rating = (f"is rated {product['rating']}/5" if product.get("rating") is not None
+                      else "has no rating in our catalogue")
             answer = (f"{product['name']} ({product['product_id']}) by {product.get('brand') or 'an unlisted brand'}"
-                      f" costs {responder.format_inr(product.get('price'))}, is rated "
-                      f"{product.get('rating') if product.get('rating') is not None else 'not listed'}"
-                      f" and has {product.get('stock_qty') or 0} in stock. {product.get('description') or ''}").strip()
+                      f" costs {responder.format_inr(product.get('price'))}, {rating}"
+                      f" and has {product.get('stock_qty') or 0} in stock{tools.stock_note(product)}. "
+                      f"{sanitize_catalog_text(product.get('description')) or ''}").strip()
         fields += [f"attributes.{intent.attribute_asked}" if intent.attribute_asked else "description", "price"]
         turn.tool("lookup_product_fact", {"product_id": product["product_id"], "attribute": intent.attribute_asked},
                   answer, t0)
@@ -353,11 +426,17 @@ def _my_orders(turn: Turn, language: str) -> ChatResponse:
     turn.tool("get_own_orders", {"customer_id": turn.request.customer_id}, f"{len(orders)} orders", t0)
     if not orders:
         return _respond(turn, "product_fact", phrase("no_orders", language), language)
-    lines = [f"{o['order_date']}: {o['product_name']} ({o['product_id']}) x{o['quantity']}"
-             + (f" - {responder.format_inr(o['price_paid'])}" if o.get("price_paid") is not None else "")
-             for o in orders[:5]]
-    answer = phrase("your_orders", language) + " " + "; ".join(lines) + "."
-    products = repo.get_products([o["product_id"] for o in orders[:5]])
+    lines = []
+    for o in orders[:5]:
+        name = o.get("product_name") or "product record unavailable"
+        line = f"{o['order_date']}: {name} ({o['product_id']}) x{o['quantity']}"
+        if o.get("price_paid") is not None:
+            line += f" - {responder.format_inr(o['price_paid'])}"
+        if not o.get("product_active"):
+            line += " [no longer in our catalogue]"
+        lines.append(line)
+    answer = phrase("your_orders", language) + " " + "; ".join(lines) + ". " + phrase("synthetic_orders", language)
+    products = repo.get_products([o["product_id"] for o in orders[:5]])   # active catalogue only
     return _respond(turn, "product_fact", answer, language,
                     products=[responder.to_card(p, "From your order history") for p in products],
                     sources=responder.to_sources(products, ["orders"]))

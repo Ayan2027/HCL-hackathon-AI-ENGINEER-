@@ -57,6 +57,16 @@ class ProductIn(BaseModel):
     best_for: Optional[str] = None
     weight_raw: Optional[str] = None                  # "350 g" / "0.95 kg" (inconsistent units)
     language: Language = "en"                         # language of description/reviews
+    # ShopMate catalogue fields (all optional, so legacy records still validate)
+    retail_price: Optional[float] = Field(None, ge=0)  # MRP as supplied; never used to invent discounts
+    image_url: Optional[str] = None
+    source_product_id: Optional[str] = None
+    data_source: Optional[str] = None
+    stock_is_simulated: bool = False                  # True = demo inventory, not live retailer stock
+    quality_flags: List[str] = Field(default_factory=list)
+    original_values: Dict[str, Any] = Field(default_factory=dict)   # provenance only, never shown as fact
+    embedding_text: Optional[str] = None
+    is_active: bool = True                            # False = archived, kept only for order history
 
 
 class ProductPatch(BaseModel):
@@ -82,6 +92,8 @@ class ProductPatch(BaseModel):
     best_for: Optional[str] = None
     weight_raw: Optional[str] = None
     language: Optional[Language] = None
+    retail_price: Optional[float] = Field(None, ge=0)
+    image_url: Optional[str] = None
 
 
 class ProductOut(ProductIn):
@@ -246,6 +258,12 @@ class ProductCard(BaseModel):
     stock_qty: int = 0
     rating: Optional[float] = None
     reason: str = ""
+    # Added for the ShopMate catalogue (optional, backward compatible)
+    subcategory: Optional[str] = None
+    retail_price: Optional[float] = None
+    image_url: Optional[str] = None
+    stock_is_simulated: bool = False
+    attributes: Dict[str, Any] = Field(default_factory=dict)   # a few factual attributes for display
 
 
 class SourceRef(BaseModel):
@@ -312,3 +330,7 @@ class HealthResponse(BaseModel):
     vector_index: int = 0
     mock_llm: bool = True
     llm_mode: str = "mock"
+    retrieval_mode: str = "keyword"              # "hybrid" (FTS5 + FAISS, RRF) or "keyword"
+    vector_status: Optional[str] = None          # why vector search is off, if it is
+    archived_products: int = 0                   # legacy rows kept only for order history
+    inventory_simulated: bool = False            # True if any active product has simulated stock

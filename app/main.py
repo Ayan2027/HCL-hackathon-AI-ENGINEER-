@@ -28,6 +28,7 @@ from app.ai import orchestrator
 from app.config import settings
 from app.db import repository as repo
 from app.db.bootstrap import load_if_empty
+from app.db.catalog_import import catalogue_is_current
 from app.db.database import init_db
 from app.schemas import (
     ChatRequest,
@@ -50,6 +51,9 @@ async def lifespan(_: FastAPI):
     init_db()
     loaded = load_if_empty()
     logger.info("Data bootstrap: %s", loaded)
+    if settings.catalog_json.exists() and not catalogue_is_current():
+        logger.warning("The active catalogue does not match %s. Run: python -m app.db.catalog_import",
+                       settings.catalog_json.name)
     try:
         orchestrator.startup()                       # build / load FAISS index
     except Exception:  # noqa: BLE001 - keyword search still works without vectors
@@ -128,12 +132,17 @@ def get_trace(trace_id: str) -> dict:
 @app.get("/health", response_model=HealthResponse, tags=["ops"])
 def health() -> HealthResponse:
     products = repo.count_products()
+    vectors = orchestrator.vector_index_size()
     return HealthResponse(
         status="ok" if products > 0 else "degraded",
         products=products,
-        vector_index=orchestrator.vector_index_size(),
+        vector_index=vectors,
         mock_llm=settings.use_mock_llm,
         llm_mode=settings.llm_mode,
+        retrieval_mode="hybrid" if vectors > 0 else "keyword",
+        vector_status=None if vectors > 0 else orchestrator.vector_status(),
+        archived_products=repo.count_archived_products(),
+        inventory_simulated=repo.any_simulated_stock(),
     )
 
 

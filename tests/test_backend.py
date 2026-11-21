@@ -74,7 +74,7 @@ def test_check_stock(sample_db):
 def test_compare_products_marks_missing(sample_db):
     table = compare_products(["P-1001", "P-1003"])
     assert [r.product_id for r in table.rows] == ["P-1001", "P-1003"]
-    assert table.rows[1].values["rating"] == "not listed"
+    assert table.rows[1].values["rating"] == "Not available in catalogue"   # missing, never shown as 0
     assert "price" in table.fields
 
 

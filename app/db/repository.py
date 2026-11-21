@@ -22,7 +22,12 @@ from app.schemas import (
 )
 from app.tools.normalize import attributes_to_text, clean_text, normalize_weight
 
-_JSON_FIELDS = {"attributes_json": "attributes", "reviews_json": "reviews"}
+_JSON_FIELDS = {
+    "attributes_json": ("attributes", dict),
+    "reviews_json": ("reviews", list),
+    "quality_flags_json": ("quality_flags", list),
+    "original_values_json": ("original_values", dict),
+}
 _FTS_TOKEN_RE = re.compile(r"[0-9A-Za-zऀ-ॿ]+")
 _FTS_STOPWORDS = {
     "a", "an", "the", "for", "and", "or", "of", "to", "in", "on", "with", "me", "my", "i",
@@ -40,72 +45,121 @@ def _now() -> str:
 # ---------------------------------------------------------------------------
 def _product_row_to_dict(row) -> Dict[str, Any]:
     product = dict(row)
-    for column, key in _JSON_FIELDS.items():
+    for column, (key, empty) in _JSON_FIELDS.items():
         raw = product.pop(column, None)
         try:
-            product[key] = json.loads(raw) if raw else ({} if key == "attributes" else [])
+            product[key] = json.loads(raw) if raw else empty()
         except json.JSONDecodeError:
-            product[key] = {} if key == "attributes" else []
+            product[key] = empty()
     product["in_stock"] = (product.get("stock_qty") or 0) > 0
+    product["stock_is_simulated"] = bool(product.get("stock_is_simulated") or 0)
+    product["is_active"] = bool(product.get("is_active", 1))
     return product
 
 
-def get_product(product_id: str) -> Optional[Dict[str, Any]]:
+_ACTIVE = " AND is_active = 1"
+
+
+def get_product(product_id: str, include_inactive: bool = False) -> Optional[Dict[str, Any]]:
+    """One product. Archived products (legacy order history) are hidden unless asked for."""
+    sql = "SELECT * FROM products WHERE product_id = ?" + ("" if include_inactive else _ACTIVE)
     with db_session() as conn:
-        row = conn.execute("SELECT * FROM products WHERE product_id = ?", (product_id,)).fetchone()
+        row = conn.execute(sql, (product_id,)).fetchone()
     return _product_row_to_dict(row) if row else None
 
 
-def get_products(product_ids: Iterable[str]) -> List[Dict[str, Any]]:
-    """Fetch many products, keeping the order of product_ids. Unknown IDs are skipped."""
+def get_products(product_ids: Iterable[str], include_inactive: bool = False) -> List[Dict[str, Any]]:
+    """Fetch many products, keeping the order of product_ids. Unknown/archived IDs are skipped."""
     ids = [pid for pid in dict.fromkeys(product_ids) if pid]
     if not ids:
         return []
     placeholders = ",".join("?" for _ in ids)
+    sql = f"SELECT * FROM products WHERE product_id IN ({placeholders})" + ("" if include_inactive else _ACTIVE)
     with db_session() as conn:
-        rows = conn.execute(f"SELECT * FROM products WHERE product_id IN ({placeholders})", ids).fetchall()
+        rows = conn.execute(sql, ids).fetchall()
     by_id = {r["product_id"]: _product_row_to_dict(r) for r in rows}
     return [by_id[pid] for pid in ids if pid in by_id]
 
 
-def get_all_products() -> List[Dict[str, Any]]:
+def get_all_products(include_inactive: bool = False) -> List[Dict[str, Any]]:
+    sql = "SELECT * FROM products" + ("" if include_inactive else " WHERE is_active = 1") + " ORDER BY product_id"
     with db_session() as conn:
-        rows = conn.execute("SELECT * FROM products ORDER BY product_id").fetchall()
+        rows = conn.execute(sql).fetchall()
     return [_product_row_to_dict(r) for r in rows]
 
 
 def get_products_by_category(category: str, limit: int = 200) -> List[Dict[str, Any]]:
     with db_session() as conn:
         rows = conn.execute(
-            "SELECT * FROM products WHERE lower(category) = lower(?) ORDER BY product_id LIMIT ?",
+            "SELECT * FROM products WHERE lower(category) = lower(?) AND is_active = 1 "
+            "ORDER BY product_id LIMIT ?",
             (category, limit),
         ).fetchall()
     return [_product_row_to_dict(r) for r in rows]
 
 
 def count_products() -> int:
+    """Products in the current (active) catalogue."""
     with db_session() as conn:
-        return conn.execute("SELECT COUNT(*) FROM products").fetchone()[0]
+        return conn.execute("SELECT COUNT(*) FROM products WHERE is_active = 1").fetchone()[0]
+
+
+def count_archived_products() -> int:
+    with db_session() as conn:
+        return conn.execute("SELECT COUNT(*) FROM products WHERE is_active = 0").fetchone()[0]
+
+
+def any_simulated_stock() -> bool:
+    with db_session() as conn:
+        return bool(conn.execute(
+            "SELECT 1 FROM products WHERE is_active = 1 AND stock_is_simulated = 1 LIMIT 1").fetchone())
 
 
 def list_brands() -> List[str]:
     with db_session() as conn:
         rows = conn.execute(
-            "SELECT DISTINCT brand FROM products WHERE brand IS NOT NULL AND brand != '' ORDER BY brand"
+            "SELECT DISTINCT brand FROM products WHERE brand IS NOT NULL AND brand != '' AND is_active = 1 "
+            "ORDER BY brand"
         ).fetchall()
     return [r["brand"] for r in rows]
 
 
 def list_categories() -> List[str]:
     with db_session() as conn:
-        rows = conn.execute("SELECT DISTINCT category FROM products ORDER BY category").fetchall()
+        rows = conn.execute(
+            "SELECT DISTINCT category FROM products WHERE is_active = 1 ORDER BY category").fetchall()
     return [r["category"] for r in rows]
+
+
+_CONNECTORS = {"for", "with", "of", "and", "in", "by", "set", "pack", "combo", "to"}
+
+
+def catalog_terms() -> set:
+    """Product-type words (head nouns) of the active catalogue, for the 'do we sell this?' check.
+    A name word counts only when it is not modifying the next word: 'Water Bottle 1L' -> bottle,
+    but 'Shoe Rack' does NOT make 'shoe' a product we sell. The last word of every subcategory
+    leaf ('Shoe Racks' -> racks) counts as well."""
+    with db_session() as conn:
+        rows = conn.execute("SELECT name, subcategory FROM products WHERE is_active = 1").fetchall()
+    words = set()
+    for r in rows:
+        tokens = [w.lower() for w in _FTS_TOKEN_RE.findall(r["name"] or "")]
+        for i, token in enumerate(tokens):
+            nxt = tokens[i + 1] if i + 1 < len(tokens) else None
+            if nxt is None or not nxt.isalpha() or nxt in _CONNECTORS:
+                words.add(token)
+        leaf = (r["subcategory"] or "").split(">")[-1]
+        leaf_tokens = [w.lower() for w in _FTS_TOKEN_RE.findall(leaf)]
+        if leaf_tokens:
+            words.add(leaf_tokens[-1])
+    return words
 
 
 def list_subcategories() -> List[str]:
     with db_session() as conn:
         rows = conn.execute(
-            "SELECT DISTINCT subcategory FROM products WHERE subcategory IS NOT NULL ORDER BY subcategory"
+            "SELECT DISTINCT subcategory FROM products WHERE subcategory IS NOT NULL AND is_active = 1 "
+            "ORDER BY subcategory"
         ).fetchall()
     return [r["subcategory"] for r in rows]
 
@@ -135,39 +189,104 @@ def keyword_search(text: str, k: int = 30) -> List[Tuple[str, float]]:
     return [(r["product_id"], round(-float(r["rank"]), 4)) for r in rows]
 
 
+_PRODUCT_COLUMNS = [
+    "product_id", "name", "category", "subcategory", "brand", "price", "stock_qty", "rating",
+    "rating_count", "attributes_json", "description", "review_summary", "reviews_json", "best_for",
+    "weight_raw", "weight_g", "language", "retail_price", "image_url", "source_product_id",
+    "data_source", "stock_is_simulated", "quality_flags_json", "original_values_json",
+    "embedding_text", "is_active",
+]
+
+
+def product_db_values(product: ProductIn) -> Dict[str, Any]:
+    """The exact column values written for a product (also used to detect unchanged rows)."""
+    return {
+        "product_id": product.product_id,
+        "name": product.name.strip(),
+        "category": product.category,
+        "subcategory": clean_text(product.subcategory),
+        "brand": clean_text(product.brand),
+        "price": product.price,
+        "stock_qty": product.stock_qty,
+        "rating": product.rating,
+        "rating_count": product.rating_count,
+        "attributes_json": json.dumps(product.attributes, ensure_ascii=False),
+        "description": clean_text(product.description),
+        "review_summary": clean_text(product.review_summary),
+        "reviews_json": json.dumps(product.reviews, ensure_ascii=False),
+        "best_for": clean_text(product.best_for),
+        "weight_raw": clean_text(product.weight_raw),
+        "weight_g": normalize_weight(product.weight_raw),
+        "language": product.language,
+        "retail_price": product.retail_price,
+        "image_url": clean_text(product.image_url),
+        "source_product_id": clean_text(product.source_product_id),
+        "data_source": clean_text(product.data_source),
+        "stock_is_simulated": 1 if product.stock_is_simulated else 0,
+        "quality_flags_json": json.dumps(product.quality_flags, ensure_ascii=False),
+        "original_values_json": json.dumps(product.original_values, ensure_ascii=False),
+        "embedding_text": clean_text(product.embedding_text),
+        "is_active": 1 if product.is_active else 0,
+    }
+
+
+# Boilerplate / identifier attributes kept out of keyword search: "covered_in_warranty" would
+# otherwise make every product match "cover"
+FTS_SKIP_ATTRIBUTES = {"covered_in_warranty", "not_covered_in_warranty", "warranty_service_type",
+                       "sales_package", "additional_info", "model_id", "style_code", "design_code",
+                       "number_of_contents_in_sales_package"}
+
+
+def _fts_row(product: Dict[str, Any]) -> Tuple:
+    """Searchable text for one product: name, brand + subcategory, category, attributes, description.
+    Price, stock and rating are NOT indexed - they are filtered exactly in code."""
+    attributes = product.get("attributes")
+    if attributes is None:
+        try:
+            attributes = json.loads(product.get("attributes_json") or "{}")
+        except json.JSONDecodeError:
+            attributes = {}
+    attributes = {k: v for k, v in attributes.items() if k not in FTS_SKIP_ATTRIBUTES}
+    subcategory = (product.get("subcategory") or "").replace(">", " ")
+    return (
+        product["product_id"], product["name"],
+        " ".join(filter(None, [product.get("brand"), subcategory])) or "",
+        product["category"], attributes_to_text(attributes),
+        " ".join(filter(None, [product.get("description"), product.get("best_for"), product.get("review_summary")])),
+    )
+
+
+def _write_fts(conn, product: Dict[str, Any]) -> None:
+    conn.execute("DELETE FROM products_fts WHERE product_id = ?", (product["product_id"],))
+    if product.get("is_active", 1):
+        conn.execute(
+            """INSERT INTO products_fts (product_id, name, brand, category, attributes_text, description)
+               VALUES (?,?,?,?,?,?)""",
+            _fts_row(product),
+        )
+
+
 def _write_product(conn, product: ProductIn) -> None:
-    attributes_json = json.dumps(product.attributes, ensure_ascii=False)
+    values = product_db_values(product)
+    columns = ", ".join(_PRODUCT_COLUMNS + ["updated_at"])
+    placeholders = ",".join("?" for _ in range(len(_PRODUCT_COLUMNS) + 1))
+    updates = ", ".join(f"{c}=excluded.{c}" for c in _PRODUCT_COLUMNS[1:] + ["updated_at"])
     conn.execute(
-        """INSERT INTO products (product_id, name, category, subcategory, brand, price, stock_qty,
-               rating, rating_count, attributes_json, description, review_summary, reviews_json,
-               best_for, weight_raw, weight_g, language, updated_at)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-           ON CONFLICT(product_id) DO UPDATE SET
-               name=excluded.name, category=excluded.category, subcategory=excluded.subcategory,
-               brand=excluded.brand, price=excluded.price, stock_qty=excluded.stock_qty,
-               rating=excluded.rating, rating_count=excluded.rating_count,
-               attributes_json=excluded.attributes_json, description=excluded.description,
-               review_summary=excluded.review_summary, reviews_json=excluded.reviews_json,
-               best_for=excluded.best_for, weight_raw=excluded.weight_raw,
-               weight_g=excluded.weight_g, language=excluded.language,
-               updated_at=excluded.updated_at""",
-        (product.product_id, product.name.strip(), product.category, clean_text(product.subcategory),
-         clean_text(product.brand), product.price, product.stock_qty, product.rating,
-         product.rating_count, attributes_json, clean_text(product.description),
-         clean_text(product.review_summary), json.dumps(product.reviews, ensure_ascii=False),
-         clean_text(product.best_for), clean_text(product.weight_raw),
-         normalize_weight(product.weight_raw), product.language, _now()),
+        f"INSERT INTO products ({columns}) VALUES ({placeholders}) "
+        f"ON CONFLICT(product_id) DO UPDATE SET {updates}",
+        [values[c] for c in _PRODUCT_COLUMNS] + [_now()],
     )
-    # Keep the keyword index in sync (delete + insert is simplest for FTS5)
-    conn.execute("DELETE FROM products_fts WHERE product_id = ?", (product.product_id,))
-    conn.execute(
-        """INSERT INTO products_fts (product_id, name, brand, category, attributes_text, description)
-           VALUES (?,?,?,?,?,?)""",
-        (product.product_id, product.name,
-         " ".join(filter(None, [product.brand, product.subcategory])) or "",
-         product.category, attributes_to_text(product.attributes),
-         " ".join(filter(None, [product.description, product.best_for, product.review_summary]))),
-    )
+    # Keep the keyword index in sync (delete + insert is simplest for FTS5); archived rows are not indexed
+    _write_fts(conn, {**values, "attributes": product.attributes})
+
+
+def rebuild_fts(conn) -> int:
+    """Rebuild the whole keyword index from the active catalogue. Returns rows indexed."""
+    conn.execute("DELETE FROM products_fts")
+    rows = conn.execute("SELECT * FROM products WHERE is_active = 1").fetchall()
+    for row in rows:
+        _write_fts(conn, dict(row))
+    return len(rows)
 
 
 def upsert_products(patches: List[ProductPatch]) -> IngestResult:
@@ -175,7 +294,7 @@ def upsert_products(patches: List[ProductPatch]) -> IngestResult:
     Changes are committed immediately, so the very next search sees them."""
     result = IngestResult()
     for patch in patches:
-        existing = get_product(patch.product_id)
+        existing = get_product(patch.product_id, include_inactive=True)
         changes = patch.model_dump(exclude_unset=True)
         if existing:
             merged = {**existing, **changes}
@@ -240,12 +359,14 @@ def list_customer_names() -> List[Tuple[str, str]]:
 
 
 def get_orders(customer_id: str) -> List[Dict[str, Any]]:
-    """Orders of ONE shopper, newest first, with product name/brand/category joined."""
+    """Orders of ONE shopper, newest first, with product name/brand/category joined.
+    product_active is 0 for archived legacy products (kept only as a historical record)
+    and NULL if the product row is missing entirely."""
     with db_session() as conn:
         rows = conn.execute(
             """SELECT o.order_id, o.customer_id, o.product_id, o.quantity, o.price_paid, o.order_date,
-                      p.name AS product_name, p.brand, p.category
-               FROM orders o JOIN products p ON p.product_id = o.product_id
+                      p.name AS product_name, p.brand, p.category, p.is_active AS product_active
+               FROM orders o LEFT JOIN products p ON p.product_id = o.product_id
                WHERE o.customer_id = ? ORDER BY o.order_date DESC""",
             (customer_id,),
         ).fetchall()

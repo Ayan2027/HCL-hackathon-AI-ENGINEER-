@@ -44,11 +44,39 @@ def db_session(db_path: PathLike = None) -> Iterator[sqlite3.Connection]:
         conn.close()
 
 
+# Columns added after the first release. migrate_schema() adds any that are missing,
+# so an existing database keeps all its rows (no reset needed).
+_ADDED_PRODUCT_COLUMNS = {
+    "retail_price": "REAL",
+    "image_url": "TEXT",
+    "source_product_id": "TEXT",
+    "data_source": "TEXT",
+    "stock_is_simulated": "INTEGER NOT NULL DEFAULT 0",
+    "quality_flags_json": "TEXT NOT NULL DEFAULT '[]'",
+    "original_values_json": "TEXT NOT NULL DEFAULT '{}'",
+    "embedding_text": "TEXT",
+    "is_active": "INTEGER NOT NULL DEFAULT 1",
+}
+
+
+def migrate_schema(conn: sqlite3.Connection) -> list:
+    """Add missing product columns in place (ALTER TABLE ADD COLUMN only). Returns added names."""
+    existing = {row[1] for row in conn.execute("PRAGMA table_info(products)")}
+    added = []
+    for name, ddl in _ADDED_PRODUCT_COLUMNS.items():
+        if name not in existing:
+            conn.execute(f"ALTER TABLE products ADD COLUMN {name} {ddl}")
+            added.append(name)
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_products_active ON products(is_active)")
+    return added
+
+
 def init_db(db_path: PathLike = None) -> None:
-    """Create all tables (idempotent)."""
+    """Create all tables and add any missing columns (idempotent, non-destructive)."""
     sql = SCHEMA_PATH.read_text(encoding="utf-8")
     with db_session(db_path) as conn:
         conn.executescript(sql)
+        migrate_schema(conn)
 
 
 def reset_db(db_path: PathLike = None) -> None:
@@ -86,4 +114,9 @@ def table_counts(db_path: PathLike = None) -> Dict[str, int]:
                 counts[table] = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
             except sqlite3.OperationalError:
                 counts[table] = -1   # table missing -> run init_db()
+        try:
+            counts["products_active"] = conn.execute(
+                "SELECT COUNT(*) FROM products WHERE is_active = 1").fetchone()[0]
+        except sqlite3.OperationalError:
+            counts["products_active"] = counts.get("products", -1)
     return counts

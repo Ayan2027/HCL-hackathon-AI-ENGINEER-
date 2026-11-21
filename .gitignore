@@ -7,6 +7,9 @@ __pycache__/
 .pytest_cache/
 .venv/
 venv/
+.venv312/
+venv312/
+
 env/
 
 # Generated data (rebuilt from data/raw by scripts/load_data.py)
@@ -24,3 +27,8 @@ Thumbs.db
 .vscode/
 .idea/
 data/db/
+
+# Python 3.12 environment (FAISS-compatible) and catalogue-import artefacts
+.venv312/
+data/backups/
+data/catalog_import_report.json

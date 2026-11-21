@@ -26,7 +26,17 @@ CREATE TABLE IF NOT EXISTS products (
     weight_g        REAL,                              -- normalised by code
     language        TEXT NOT NULL DEFAULT 'en',
     created_at      TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
+    updated_at      TEXT NOT NULL DEFAULT (datetime('now')),
+    -- ShopMate catalogue fields (also added to older DBs by database.migrate_schema())
+    retail_price         REAL,                         -- MRP as supplied
+    image_url            TEXT,
+    source_product_id    TEXT,                         -- provenance
+    data_source          TEXT,
+    stock_is_simulated   INTEGER NOT NULL DEFAULT 0,   -- 1 = demo inventory, not live stock
+    quality_flags_json   TEXT NOT NULL DEFAULT '[]',
+    original_values_json TEXT NOT NULL DEFAULT '{}',
+    embedding_text       TEXT,                         -- text used for the FAISS vector
+    is_active            INTEGER NOT NULL DEFAULT 1    -- 0 = archived (kept only for order history)
 );
 
 CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);

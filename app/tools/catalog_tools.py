@@ -10,6 +10,14 @@ from app.db import repository as repo
 from app.schemas import ComparisonRow, ComparisonTable, Constraints, SortBy, StockResult
 from app.tools.normalize import color_matches, size_matches
 
+NOT_AVAILABLE = "Not available in catalogue"
+SIMULATED_NOTE = "simulated demo inventory"
+
+
+def stock_note(product: Dict[str, Any]) -> str:
+    """' (simulated demo inventory)' for demo stock, so it is never presented as live retailer stock."""
+    return f" ({SIMULATED_NOTE})" if product.get("stock_is_simulated") else ""
+
 
 def _lower(values: List[str]) -> List[str]:
     return [v.strip().lower() for v in values if v and v.strip()]
@@ -47,7 +55,9 @@ def apply_filters(
             reason = "size not available"
         elif constraints.color is not None and color_matches(constraints.color, attrs.get("color")) is not True:
             reason = "different colour"
-        elif constraints.min_rating is not None and (p.get("rating") or 0) < constraints.min_rating:
+        elif constraints.min_rating is not None and p.get("rating") is None:
+            reason = "rating not available"      # unknown, not "low": the minimum cannot be verified
+        elif constraints.min_rating is not None and p["rating"] < constraints.min_rating:
             reason = "rating too low"
         elif constraints.in_stock_only and (p.get("stock_qty") or 0) <= 0:
             reason = "out of stock"
@@ -84,9 +94,9 @@ def check_stock(product_id: str, size: Optional[str] = None, color: Optional[str
 
     parts = [f"{product['name']} ({product_id})"]
     if qty <= 0:
-        parts.append("is currently out of stock")
+        parts.append(f"is currently out of stock{stock_note(product)}")
     else:
-        parts.append(f"has {qty} unit{'s' if qty != 1 else ''} in stock")
+        parts.append(f"has {qty} unit{'s' if qty != 1 else ''} in stock{stock_note(product)}")
     if size is not None:
         if size_ok is None:
             parts.append(f"but size information is not listed")
@@ -107,18 +117,30 @@ def check_stock(product_id: str, size: Optional[str] = None, color: Optional[str
     )
 
 
-_BASE_FIELDS = ["price", "brand", "rating", "stock_qty", "weight_g"]
+_BASE_FIELDS = ["price", "retail_price", "brand", "category", "subcategory", "rating", "stock_qty", "weight_g"]
+# Attribute keys that are identifiers or boilerplate, not something a shopper compares
+_SKIP_ATTRS = {"model_id", "style_code", "design_code", "model_number", "sales_package",
+               "additional_info", "number_of_contents_in_sales_package"}
+MAX_ATTR_FIELDS = 8
 
 
 def compare_products(product_ids: List[str]) -> ComparisonTable:
-    """Side-by-side table of real catalogue fields. Missing values show as 'not listed'."""
+    """Side-by-side table of real catalogue fields. Missing values show as 'Not available in catalogue'
+    (never as 0 or 'no'). Base fields that no compared product has are left out; attributes present
+    in every product come first."""
     products = repo.get_products(product_ids)
-    attr_keys: List[str] = []
+    counts: Dict[str, int] = {}
+    order: List[str] = []
     for p in products:
-        for key in (p.get("attributes") or {}):
-            if key not in attr_keys:
-                attr_keys.append(key)
-    fields = _BASE_FIELDS + attr_keys[:8]
+        for key, value in (p.get("attributes") or {}).items():
+            if key in _SKIP_ATTRS or value in (None, "", []):
+                continue
+            if key not in counts:
+                order.append(key)
+            counts[key] = counts.get(key, 0) + 1
+    attr_keys = sorted(order, key=lambda k: (-counts[k], order.index(k)))[:MAX_ATTR_FIELDS]
+    base = [f for f in _BASE_FIELDS if any(p.get(f) not in (None, "") for p in products) or f == "rating"]
+    fields = base + attr_keys
 
     rows: List[ComparisonRow] = []
     for p in products:
@@ -128,6 +150,8 @@ def compare_products(product_ids: List[str]) -> ComparisonTable:
             value = p.get(field) if field in _BASE_FIELDS else attrs.get(field)
             if isinstance(value, list):
                 value = ", ".join(str(v) for v in value)
-            values[field] = "not listed" if value is None or value == "" else value
+            if field == "stock_qty" and value is not None:
+                value = f"{value} in stock{stock_note(p)}" if value > 0 else f"Out of stock{stock_note(p)}"
+            values[field] = NOT_AVAILABLE if value is None or value == "" else value
         rows.append(ComparisonRow(product_id=p["product_id"], name=p["name"], values=values))
     return ComparisonTable(fields=fields, rows=rows)

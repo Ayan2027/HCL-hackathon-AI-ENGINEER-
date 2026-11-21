@@ -15,7 +15,7 @@ from typing import Callable, List, Tuple
 
 from pydantic import ValidationError
 
-from app.config import BASE_DIR, CATEGORIES
+from app.config import BASE_DIR, LEGACY_CATEGORIES as CATEGORIES  # validates the legacy data/raw set
 from app.schemas import Customer, Order, ProductIn
 from app.tools.normalize import normalize_weight
 
