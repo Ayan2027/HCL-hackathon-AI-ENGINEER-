@@ -6,10 +6,22 @@ Everything shown here comes from the API response - the UI adds no facts.
 """
 from typing import Any, Callable, Dict, List
 
-import pandas as pd
 import streamlit as st
 
 import api_client
+
+try:                     # pandas is only used for tables; keep the UI usable without it
+    import pandas as pd
+except Exception:        # noqa: BLE001 - e.g. blocked numpy DLLs on locked-down Windows
+    pd = None
+
+
+def table(data, **kwargs) -> None:
+    """Show tabular data with pandas when available, otherwise Streamlit's plain table."""
+    if pd is not None:
+        stretch(st.dataframe, pd.DataFrame(data), **kwargs)
+    else:                # st.table takes no pandas-only options such as hide_index
+        stretch(st.table, data)
 
 ANSWER_BADGES = {
     "recommendation": ("🛍️", "Recommendation", "green"),
@@ -83,7 +95,7 @@ def comparison_table(comparison: Dict[str, Any]) -> None:
             FIELD_LABELS.get(f, f.replace("_", " ").capitalize()): str(values.get(f, "not listed"))
             for f in comparison.get("fields", [])
         }
-    stretch(st.dataframe, pd.DataFrame(data))
+    table(data)
 
 
 def suggestion_chips(suggestions: List[str], key_prefix: str, on_click: Callable[[str], None]) -> None:
@@ -112,12 +124,12 @@ def trace_viewer(trace_id: str, key_prefix: str) -> None:
         tools = trace.get("tools") or []
         if tools:
             st.markdown("**Tools run (in order)**")
-            stretch(st.dataframe, pd.DataFrame([{"tool": t["name"], "result": t["output_summary"],
-                                                 "ms": t["duration_ms"]} for t in tools]), hide_index=True)
+            table([{"tool": t["name"], "result": t["output_summary"],
+                    "ms": t["duration_ms"]} for t in tools], hide_index=True)
         retrieved = trace.get("retrieved") or []
         if retrieved:
             st.markdown("**Retrieved candidates (before filters)**")
-            stretch(st.dataframe, pd.DataFrame(retrieved), hide_index=True)
+            table(retrieved, hide_index=True)
         with st.popover("Full JSON"):
             st.json(trace)
 

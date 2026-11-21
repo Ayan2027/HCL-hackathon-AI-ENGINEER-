@@ -15,6 +15,9 @@ data/shopsense.db-*
 data/index/
 models/
 
+# Local logs
+*.log
+
 # OS / editors
 .DS_Store
 Thumbs.db
