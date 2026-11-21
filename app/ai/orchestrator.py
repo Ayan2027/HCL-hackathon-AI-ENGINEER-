@@ -25,6 +25,8 @@ from app.ai.language import detect_language, phrase, to_english_keywords, tokeni
 from app.ai.retrieval import build_query_text, hybrid_retrieve
 from app.ai.ranking import rank_products
 from app.ai.safety import check_message, sanitize_catalog_text
+from app.ai.ranking import product_type_gate, rank_products
+from app.ai.safety import check_message
 from app.ai.vector_index import get_vector_index
 from app.config import settings
 from app.db import repository as repo
@@ -225,7 +227,10 @@ def _search(turn: Turn, intent: Intent, state: SessionState, language: str, cont
     t0 = time.perf_counter()
     customer = repo.get_customer(req.customer_id)
     orders = repo.get_orders(req.customer_id)
-    ranked = rank_products(kept, merged, customer, orders)
+    typed, nouns = product_type_gate(kept, merged)
+    if nouns:
+        turn.tool("product_type_gate", {"types": nouns}, f"kept {len(typed)} of {len(kept)}", t0)
+    ranked = rank_products(typed, merged, customer, orders)
     top = ranked[: settings.top_k]
     turn.tool("rank_products", {"sort_by": merged.sort_by, "personalised_for": req.customer_id},
               ", ".join(f"{p['product_id']}={p['_rank']['final']}" for p in top), t0)
@@ -356,6 +361,9 @@ def _product_question(turn: Turn, intent: Intent, state: SessionState, language:
     ids = memory.resolve_referenced_products(intent, state)
     if not ids and (intent.search_query_en or intent.constraints.keywords):
         found, _ = hybrid_retrieve(build_query_text(intent.search_query_en, intent.constraints), intent.constraints)
+        if intent.constraints.brands:
+            found = [p for p in found if (p.get("brand") or "").lower() in {b.lower() for b in intent.constraints.brands}] or found
+        found, _ = product_type_gate(found, intent.constraints)
         ids = [found[0]["product_id"]] if found else []
     if not ids:
         msg = phrase("which_product", language)
@@ -379,6 +387,12 @@ def _product_question(turn: Turn, intent: Intent, state: SessionState, language:
         answer = responder.stock_text(result, product, language)
         fields += ["attributes.sizes_available", "attributes.color"]
     else:
+        if not intent.attribute_asked:
+            words = {w.lower().strip("?.,!") for w in turn.request.message.split() if len(w) > 3}
+            for key in (product.get("attributes") or {}):
+                if any(w in key.lower() for w in words):
+                    intent.attribute_asked = key
+                    break
         value = _attribute_value(product, intent.attribute_asked)
         label = (intent.attribute_asked or "details").replace("_", " ")
         if intent.attribute_asked == "price":

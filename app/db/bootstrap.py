@@ -13,6 +13,14 @@ A fresh database is built in two steps:
 To move an EXISTING database to the ShopMate catalogue without a reset, run
     python -m app.db.catalog_import
 The API calls load_if_empty() at startup, so `docker compose up` works on a fresh machine.
+    python -m app.db.bootstrap            # load data/raw (or data/sample) if the DB is empty
+    python -m app.db.bootstrap --reset    # wipe the DB and reload
+    python -m app.db.bootstrap --if-empty # used by docker compose "db" service
+
+Source folder: data/raw/ when products.json exists there (Member 4's full
+dataset), otherwise data/sample/ (12 products for early development).
+The API also calls load_if_empty() at startup, so `docker compose up`
+works on a fresh machine with no manual steps.
 """
 import argparse
 import json
@@ -93,11 +101,14 @@ def main() -> int:
     parser.add_argument("--reset", action="store_true", help="DESTRUCTIVE: delete the database first")
     parser.add_argument("--if-empty", action="store_true", help="load only if the database has no products")
     parser.add_argument("--source", type=Path, help="folder with products.json, customers.json, orders.json")
+    parser.add_argument("--if-empty", action="store_true", help="load only when the products table is empty")
     args = parser.parse_args()
 
     if args.if_empty and not args.reset:
         print(json.dumps(load_if_empty(), indent=2))
         print("Table counts:", table_counts())
+    if args.if_empty:
+        print(json.dumps(load_if_empty()), "| counts:", table_counts())
         return 0
     if args.reset:
         reset_db()
