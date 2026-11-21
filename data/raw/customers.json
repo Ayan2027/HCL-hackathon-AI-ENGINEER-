@@ -1,0 +1,624 @@
+[
+ {
+  "customer_id": "C-001",
+  "name": "Priya Sharma",
+  "city": "Kolkata",
+  "preferred_language": "en",
+  "budget_min": null,
+  "budget_max": 5000.0,
+  "preferred_brands": [
+   "OnePlus",
+   "Samsung"
+  ],
+  "preferred_categories": [
+   "Electronics",
+   "Beauty & Personal Care",
+   "Apparel"
+  ],
+  "sizes": {
+   "shoe": 6,
+   "apparel": "XL"
+  },
+  "persona_note": "Shops mostly for electronics and watches the budget closely."
+ },
+ {
+  "customer_id": "C-002",
+  "name": "Rahul Verma",
+  "city": "Pune",
+  "preferred_language": "en",
+  "budget_min": 500.0,
+  "budget_max": 2000.0,
+  "preferred_brands": [
+   "boAt",
+   "Samsung"
+  ],
+  "preferred_categories": [
+   "Electronics"
+  ],
+  "sizes": {
+   "shoe": 7,
+   "apparel": "XL"
+  },
+  "persona_note": "Shops mostly for electronics and watches the budget closely."
+ },
+ {
+  "customer_id": "C-003",
+  "name": "Ananya Verma",
+  "city": "Prayagraj",
+  "preferred_language": "hinglish",
+  "budget_min": null,
+  "budget_max": 8000.0,
+  "preferred_brands": [
+   "Kookaburra",
+   "SG"
+  ],
+  "preferred_categories": [
+   "Sports & Outdoors"
+  ],
+  "sizes": {
+   "shoe": 8,
+   "apparel": "M"
+  },
+  "persona_note": "Brand-new shopper with no order history."
+ },
+ {
+  "customer_id": "C-004",
+  "name": "Arjun Das",
+  "city": "Patna",
+  "preferred_language": "en",
+  "budget_min": 200.0,
+  "budget_max": 1500.0,
+  "preferred_brands": [
+   "Sony",
+   "Nike",
+   "Columbia"
+  ],
+  "preferred_categories": [
+   "Apparel"
+  ],
+  "sizes": {
+   "shoe": 6,
+   "apparel": "XL"
+  },
+  "persona_note": "Says they hate sports and want cheap items, yet likes premium sports brands."
+ },
+ {
+  "customer_id": "C-005",
+  "name": "Sneha Mishra",
+  "city": "Bhopal",
+  "preferred_language": "hinglish",
+  "budget_min": 500.0,
+  "budget_max": 8000.0,
+  "preferred_brands": [
+   "Sony",
+   "JBL"
+  ],
+  "preferred_categories": [
+   "Electronics",
+   "Sports & Outdoors",
+   "Beauty & Personal Care"
+  ],
+  "sizes": {
+   "shoe": 7,
+   "apparel": "L"
+  },
+  "persona_note": "Keeps re-buying favourite products that are now out of stock."
+ },
+ {
+  "customer_id": "C-006",
+  "name": "Vikram Gupta",
+  "city": "Indore",
+  "preferred_language": "en",
+  "budget_min": 500.0,
+  "budget_max": 2000.0,
+  "preferred_brands": [
+   "Crocs",
+   "Reebok"
+  ],
+  "preferred_categories": [
+   "Footwear"
+  ],
+  "sizes": {
+   "shoe": 8,
+   "apparel": "L"
+  },
+  "persona_note": "Shops mostly for footwear and watches the budget closely."
+ },
+ {
+  "customer_id": "C-007",
+  "name": "Kavya Mehta",
+  "city": "Patna",
+  "preferred_language": "hinglish",
+  "budget_min": null,
+  "budget_max": 8000.0,
+  "preferred_brands": [
+   "Wild Stone",
+   "Lakme"
+  ],
+  "preferred_categories": [
+   "Beauty & Personal Care"
+  ],
+  "sizes": {
+   "shoe": 7,
+   "apparel": "XL"
+  },
+  "persona_note": "Shops mostly for beauty & personal care and watches the budget closely."
+ },
+ {
+  "customer_id": "C-008",
+  "name": "Rohan Bose",
+  "city": "Chennai",
+  "preferred_language": "hi",
+  "budget_min": null,
+  "budget_max": 5000.0,
+  "preferred_brands": [
+   "Van Heusen",
+   "H&M"
+  ],
+  "preferred_categories": [
+   "Apparel",
+   "Home & Kitchen"
+  ],
+  "sizes": {
+   "shoe": 8,
+   "apparel": "XL"
+  },
+  "persona_note": "Shops mostly for apparel and watches the budget closely."
+ },
+ {
+  "customer_id": "C-009",
+  "name": "Isha Singh",
+  "city": "Pune",
+  "preferred_language": "hinglish",
+  "budget_min": 200.0,
+  "budget_max": 15000.0,
+  "preferred_brands": [
+   "Motorola",
+   "ASUS"
+  ],
+  "preferred_categories": [
+   "Electronics",
+   "Footwear"
+  ],
+  "sizes": {
+   "shoe": 7,
+   "apparel": "L"
+  },
+  "persona_note": "Shops mostly for electronics and watches the budget closely."
+ },
+ {
+  "customer_id": "C-010",
+  "name": "Aditya Kulkarni",
+  "city": "Varanasi",
+  "preferred_language": "hi",
+  "budget_min": 200.0,
+  "budget_max": 8000.0,
+  "preferred_brands": [
+   "Crocs",
+   "Bata"
+  ],
+  "preferred_categories": [
+   "Footwear"
+  ],
+  "sizes": {
+   "shoe": 7,
+   "apparel": "XL"
+  },
+  "persona_note": "Shops mostly for footwear and watches the budget closely."
+ },
+ {
+  "customer_id": "C-011",
+  "name": "Meera Rao",
+  "city": "Mumbai",
+  "preferred_language": "hinglish",
+  "budget_min": 500.0,
+  "budget_max": 2000.0,
+  "preferred_brands": [
+   "Lenovo",
+   "realme"
+  ],
+  "preferred_categories": [
+   "Electronics"
+  ],
+  "sizes": {
+   "shoe": 6,
+   "apparel": "XL"
+  },
+  "persona_note": "Shops mostly for electronics and watches the budget closely."
+ },
+ {
+  "customer_id": "C-012",
+  "name": "Karan Iyer",
+  "city": "Prayagraj",
+  "preferred_language": "hinglish",
+  "budget_min": null,
+  "budget_max": 8000.0,
+  "preferred_brands": [
+   "Signoraware",
+   "Sujata"
+  ],
+  "preferred_categories": [
+   "Home & Kitchen",
+   "Sports & Outdoors"
+  ],
+  "sizes": {
+   "shoe": 8,
+   "apparel": "S"
+  },
+  "persona_note": "Shops mostly for home & kitchen and watches the budget closely."
+ },
+ {
+  "customer_id": "C-013",
+  "name": "Pooja Chatterjee",
+  "city": "Prayagraj",
+  "preferred_language": "hi",
+  "budget_min": 500.0,
+  "budget_max": 60000.0,
+  "preferred_brands": [
+   "Strauss",
+   "Victor"
+  ],
+  "preferred_categories": [
+   "Sports & Outdoors",
+   "Footwear"
+  ],
+  "sizes": {
+   "shoe": 7,
+   "apparel": "S"
+  },
+  "persona_note": "Shops mostly for sports & outdoors and watches the budget closely."
+ },
+ {
+  "customer_id": "C-014",
+  "name": "Siddharth Kapoor",
+  "city": "Bhopal",
+  "preferred_language": "hinglish",
+  "budget_min": 500.0,
+  "budget_max": 3000.0,
+  "preferred_brands": [
+   "Wildcraft",
+   "Roadster"
+  ],
+  "preferred_categories": [
+   "Apparel",
+   "Home & Kitchen",
+   "Footwear"
+  ],
+  "sizes": {
+   "shoe": 10,
+   "apparel": "L"
+  },
+  "persona_note": "Shops mostly for apparel and watches the budget closely."
+ },
+ {
+  "customer_id": "C-015",
+  "name": "Neha Reddy",
+  "city": "Hyderabad",
+  "preferred_language": "en",
+  "budget_min": null,
+  "budget_max": 15000.0,
+  "preferred_brands": [
+   "Redmi",
+   "Sony"
+  ],
+  "preferred_categories": [
+   "Electronics",
+   "Beauty & Personal Care"
+  ],
+  "sizes": {
+   "shoe": 6,
+   "apparel": "XL"
+  },
+  "persona_note": "Shops mostly for electronics and watches the budget closely."
+ },
+ {
+  "customer_id": "C-016",
+  "name": "Amit Yadav",
+  "city": "Mumbai",
+  "preferred_language": "hinglish",
+  "budget_min": 500.0,
+  "budget_max": 3000.0,
+  "preferred_brands": [
+   "Bajaj",
+   "Sujata"
+  ],
+  "preferred_categories": [
+   "Home & Kitchen"
+  ],
+  "sizes": {
+   "shoe": 10,
+   "apparel": "XL"
+  },
+  "persona_note": "Shops mostly for home & kitchen and watches the budget closely."
+ },
+ {
+  "customer_id": "C-017",
+  "name": "Ritu Pandey",
+  "city": "Hyderabad",
+  "preferred_language": "en",
+  "budget_min": 500.0,
+  "budget_max": 5000.0,
+  "preferred_brands": [
+   "Spaces",
+   "Milton"
+  ],
+  "preferred_categories": [
+   "Home & Kitchen"
+  ],
+  "sizes": {
+   "shoe": 10,
+   "apparel": "XL"
+  },
+  "persona_note": "Shops mostly for home & kitchen and watches the budget closely."
+ },
+ {
+  "customer_id": "C-018",
+  "name": "Manish Nair",
+  "city": "Patna",
+  "preferred_language": "en",
+  "budget_min": 500.0,
+  "budget_max": 5000.0,
+  "preferred_brands": [
+   "Bata",
+   "Wildcraft"
+  ],
+  "preferred_categories": [
+   "Footwear"
+  ],
+  "sizes": {
+   "shoe": 6,
+   "apparel": "S"
+  },
+  "persona_note": "Shops mostly for footwear and watches the budget closely."
+ },
+ {
+  "customer_id": "C-019",
+  "name": "Divya Khan",
+  "city": "Lucknow",
+  "preferred_language": "hi",
+  "budget_min": null,
+  "budget_max": 2000.0,
+  "preferred_brands": [
+   "Fogg",
+   "Lakme"
+  ],
+  "preferred_categories": [
+   "Beauty & Personal Care",
+   "Electronics",
+   "Footwear"
+  ],
+  "sizes": {
+   "shoe": 8,
+   "apparel": "XL"
+  },
+  "persona_note": "Shops mostly for beauty & personal care and watches the budget closely."
+ },
+ {
+  "customer_id": "C-020",
+  "name": "Saurabh Sharma",
+  "city": "Ranchi",
+  "preferred_language": "en",
+  "budget_min": 200.0,
+  "budget_max": 3000.0,
+  "preferred_brands": [
+   "Story@Home",
+   "Philips"
+  ],
+  "preferred_categories": [
+   "Home & Kitchen"
+  ],
+  "sizes": {
+   "shoe": 6,
+   "apparel": "S"
+  },
+  "persona_note": "Shops mostly for home & kitchen and watches the budget closely."
+ },
+ {
+  "customer_id": "C-021",
+  "name": "Anjali Patel",
+  "city": "Kanpur",
+  "preferred_language": "hi",
+  "budget_min": null,
+  "budget_max": 30000.0,
+  "preferred_brands": [
+   "Skybags",
+   "Quechua"
+  ],
+  "preferred_categories": [
+   "Sports & Outdoors",
+   "Apparel",
+   "Beauty & Personal Care"
+  ],
+  "sizes": {
+   "shoe": 9,
+   "apparel": "L"
+  },
+  "persona_note": "Shops mostly for sports & outdoors and watches the budget closely."
+ },
+ {
+  "customer_id": "C-022",
+  "name": "Nikhil Joshi",
+  "city": "Pune",
+  "preferred_language": "hinglish",
+  "budget_min": null,
+  "budget_max": 5000.0,
+  "preferred_brands": [
+   "Paragon",
+   "Reebok"
+  ],
+  "preferred_categories": [
+   "Footwear"
+  ],
+  "sizes": {
+   "shoe": 8,
+   "apparel": "XL"
+  },
+  "persona_note": "Shops mostly for footwear and watches the budget closely."
+ },
+ {
+  "customer_id": "C-023",
+  "name": "Shreya Verma",
+  "city": "Delhi",
+  "preferred_language": "en",
+  "budget_min": 500.0,
+  "budget_max": 60000.0,
+  "preferred_brands": [
+   "boAt",
+   "Sony"
+  ],
+  "preferred_categories": [
+   "Electronics"
+  ],
+  "sizes": {
+   "shoe": 7,
+   "apparel": "M"
+  },
+  "persona_note": "Shops mostly for electronics and watches the budget closely."
+ },
+ {
+  "customer_id": "C-024",
+  "name": "Harsh Das",
+  "city": "Indore",
+  "preferred_language": "hi",
+  "budget_min": null,
+  "budget_max": 5000.0,
+  "preferred_brands": [
+   "MRF",
+   "Wildcraft"
+  ],
+  "preferred_categories": [
+   "Sports & Outdoors",
+   "Beauty & Personal Care"
+  ],
+  "sizes": {
+   "shoe": 9,
+   "apparel": "L"
+  },
+  "persona_note": "Shops mostly for sports & outdoors and watches the budget closely."
+ },
+ {
+  "customer_id": "C-025",
+  "name": "Tanvi Mishra",
+  "city": "Mumbai",
+  "preferred_language": "en",
+  "budget_min": null,
+  "budget_max": 60000.0,
+  "preferred_brands": [
+   "H&M",
+   "Columbia"
+  ],
+  "preferred_categories": [
+   "Apparel",
+   "Sports & Outdoors"
+  ],
+  "sizes": {
+   "shoe": 6,
+   "apparel": "L"
+  },
+  "persona_note": "Shops mostly for apparel and watches the budget closely."
+ },
+ {
+  "customer_id": "C-026",
+  "name": "Deepak Gupta",
+  "city": "Bengaluru",
+  "preferred_language": "en",
+  "budget_min": 500.0,
+  "budget_max": 60000.0,
+  "preferred_brands": [
+   "Sony",
+   "Noise"
+  ],
+  "preferred_categories": [
+   "Electronics"
+  ],
+  "sizes": {
+   "shoe": 6,
+   "apparel": "S"
+  },
+  "persona_note": "Shops mostly for electronics and watches the budget closely."
+ },
+ {
+  "customer_id": "C-027",
+  "name": "Ayesha Mehta",
+  "city": "Lucknow",
+  "preferred_language": "hinglish",
+  "budget_min": 200.0,
+  "budget_max": 5000.0,
+  "preferred_brands": [
+   "Wildcraft",
+   "Woodland"
+  ],
+  "preferred_categories": [
+   "Footwear",
+   "Sports & Outdoors",
+   "Electronics"
+  ],
+  "sizes": {
+   "shoe": 8,
+   "apparel": "M"
+  },
+  "persona_note": "Shops mostly for footwear and watches the budget closely."
+ },
+ {
+  "customer_id": "C-028",
+  "name": "Rajat Bose",
+  "city": "Indore",
+  "preferred_language": "en",
+  "budget_min": 500.0,
+  "budget_max": 8000.0,
+  "preferred_brands": [
+   "Dove",
+   "Braun"
+  ],
+  "preferred_categories": [
+   "Beauty & Personal Care",
+   "Apparel",
+   "Footwear"
+  ],
+  "sizes": {
+   "shoe": 8,
+   "apparel": "S"
+  },
+  "persona_note": "Shops mostly for beauty & personal care and watches the budget closely."
+ },
+ {
+  "customer_id": "C-029",
+  "name": "Nandini Singh",
+  "city": "Patna",
+  "preferred_language": "hinglish",
+  "budget_min": 500.0,
+  "budget_max": 2000.0,
+  "preferred_brands": [
+   "Strauss",
+   "Black Diamond"
+  ],
+  "preferred_categories": [
+   "Sports & Outdoors"
+  ],
+  "sizes": {
+   "shoe": 8,
+   "apparel": "S"
+  },
+  "persona_note": "Shops mostly for sports & outdoors and watches the budget closely."
+ },
+ {
+  "customer_id": "C-030",
+  "name": "Varun Kulkarni",
+  "city": "Bengaluru",
+  "preferred_language": "en",
+  "budget_min": 500.0,
+  "budget_max": 8000.0,
+  "preferred_brands": [
+   "Wrangler",
+   "Wildcraft"
+  ],
+  "preferred_categories": [
+   "Apparel"
+  ],
+  "sizes": {
+   "shoe": 6,
+   "apparel": "L"
+  },
+  "persona_note": "Shops mostly for apparel and watches the budget closely."
+ }
+]

@@ -1,0 +1,560 @@
+[
+ {
+  "title": "Recommendation with a budget (tools + grounding)",
+  "trace": {
+   "trace_id": "922908a0",
+   "session_id": "audit-79157f",
+   "customer_id": "C-002",
+   "created_at": "2026-11-21T07:24:02+00:00",
+   "message": "A gift for my father who likes trekking, under ₹3,000",
+   "language": "en",
+   "answer_type": "recommendation",
+   "answer": "Here are 3 options from our catalogue under ₹3,000:",
+   "follow_up_question": null,
+   "latency_ms": 21.5,
+   "llm_mode": "mock/template",
+   "intent": {
+    "intent": "search",
+    "constraints": {
+     "category": "Sports & Outdoors",
+     "subcategory": null,
+     "budget_min": null,
+     "budget_max": 3000.0,
+     "brands": [],
+     "exclude_brands": [],
+     "size": null,
+     "color": null,
+     "keywords": [
+      "trekking"
+     ],
+     "occasion": "gift for father",
+     "min_rating": null,
+     "in_stock_only": true,
+     "sort_by": "relevance"
+    },
+    "search_query_en": "trekking",
+    "refers_to_previous": false,
+    "referenced_positions": [],
+    "product_ids_mentioned": [],
+    "attribute_asked": null,
+    "language": "en",
+    "confidence": 0.6,
+    "source": "mock",
+    "note": "mock mode"
+   },
+   "retrieved": [
+    {
+     "product_id": "P-1266",
+     "keyword": 1.0,
+     "semantic": 0.0,
+     "score": 1.0,
+     "source": "keyword"
+    },
+    {
+     "product_id": "P-1270",
+     "keyword": 0.9921643411438176,
+     "semantic": 0.0,
+     "score": 0.9922,
+     "source": "keyword"
+    },
+    {
+     "product_id": "P-1260",
+     "keyword": 0.9844230878160226,
+     "semantic": 0.0,
+     "score": 0.9844,
+     "source": "keyword"
+    },
+    {
+     "product_id": "P-1257",
+     "keyword": 0.9768328833336481,
+     "semantic": 0.0,
+     "score": 0.9768,
+     "source": "keyword"
+    },
+    {
+     "product_id": "P-1211",
+     "keyword": 0.9475294073220928,
+     "semantic": 0.0,
+     "score": 0.9475,
+     "source": "keyword"
+    },
+    {
+     "product_id": "P-1210",
+     "keyword": 0.9404867549043672,
+     "semantic": 0.0,
+     "score": 0.9405,
+     "source": "keyword"
+    },
+    {
+     "product_id": "P-1214",
+     "keyword": 0.9335385080150295,
+     "semantic": 0.0,
+     "score": 0.9335,
+     "source": "keyword"
+    },
+    {
+     "product_id": "P-1082",
+     "keyword": 0.8549931083964277,
+     "semantic": 0.0,
+     "score": 0.855,
+     "source": "keyword"
+    },
+    {
+     "product_id": "P-1149",
+     "keyword": 0.8501973075543305,
+     "semantic": 0.0,
+     "score": 0.8502,
+     "source": "keyword"
+    },
+    {
+     "product_id": "P-1089",
+     "keyword": 0.8481015048241225,
+     "semantic": 0.0,
+     "score": 0.8481,
+     "source": "keyword"
+    },
+    {
+     "product_id": "P-1088",
+     "keyword": 0.8470630440118574,
+     "semantic": 0.0,
+     "score": 0.8471,
+     "source": "keyword"
+    },
+    {
+     "product_id": "P-1147",
+     "keyword": 0.8460245831995923,
+     "semantic": 0.0,
+     "score": 0.846,
+     "source": "keyword"
+    },
+    {
+     "product_id": "P-1145",
+     "keyword": 0.8427015086003437,
+     "semantic": 0.0,
+     "score": 0.8427,
+     "source": "keyword"
+    },
+    {
+     "product_id": "P-1081",
+     "keyword": 0.8415497611540131,
+     "semantic": 0.0,
+     "score": 0.8415,
+     "source": "keyword"
+    },
+    {
+     "product_id": "P-1090",
+     "keyword": 0.8415497611540131,
+     "semantic": 0.0,
+     "score": 0.8415,
+     "source": "keyword"
+    }
+   ],
+   "filters": {
+    "constraints": {
+     "category": "Sports & Outdoors",
+     "subcategory": null,
+     "budget_min": null,
+     "budget_max": 3000.0,
+     "brands": [],
+     "exclude_brands": [],
+     "size": null,
+     "color": null,
+     "keywords": [
+      "trekking"
+     ],
+     "occasion": "gift for father",
+     "min_rating": null,
+     "in_stock_only": true,
+     "sort_by": "relevance"
+    },
+    "memory": [
+     "new search"
+    ],
+    "dropped": [
+     {
+      "product_id": "P-1266",
+      "reason": "different category"
+     },
+     {
+      "product_id": "P-1270",
+      "reason": "different category"
+     },
+     {
+      "product_id": "P-1260",
+      "reason": "different category"
+     },
+     {
+      "product_id": "P-1257",
+      "reason": "different category"
+     },
+     {
+      "product_id": "P-1211",
+      "reason": "different category"
+     },
+     {
+      "product_id": "P-1210",
+      "reason": "different category"
+     },
+     {
+      "product_id": "P-1214",
+      "reason": "different category"
+     },
+     {
+      "product_id": "P-1082",
+      "reason": "different category"
+     },
+     {
+      "product_id": "P-1089",
+      "reason": "different category"
+     },
+     {
+      "product_id": "P-1088",
+      "reason": "different category"
+     },
+     {
+      "product_id": "P-1081",
+      "reason": "different category"
+     },
+     {
+      "product_id": "P-1090",
+      "reason": "different category"
+     },
+     {
+      "product_id": "P-1086",
+      "reason": "different category"
+     },
+     {
+      "product_id": "P-1084",
+      "reason": "different category"
+     },
+     {
+      "product_id": "P-1087",
+      "reason": "different category"
+     },
+     {
+      "product_id": "P-1083",
+      "reason": "different category"
+     },
+     {
+      "product_id": "P-1085",
+      "reason": "different category"
+     },
+     {
+      "product_id": "P-1125",
+      "reason": "different category"
+     },
+     {
+      "product_id": "P-1126",
+      "reason": "different category"
+     },
+     {
+      "product_id": "P-1127",
+      "reason": "different category"
+     }
+    ]
+   },
+   "tools": [
+    {
+     "name": "safety_check",
+     "input": {
+      "message_chars": 53
+     },
+     "output_summary": "ok ",
+     "duration_ms": 0.5
+    },
+    {
+     "name": "understand_intent",
+     "input": {
+      "source": "mock"
+     },
+     "output_summary": "search mock mode",
+     "duration_ms": 14.4
+    },
+    {
+     "name": "hybrid_retrieve",
+     "input": {
+      "query": "trekking gift for father"
+     },
+     "output_summary": "30 candidates (keyword)",
+     "duration_ms": 1.7
+    },
+    {
+     "name": "apply_filters",
+     "input": {
+      "category": "Sports & Outdoors",
+      "budget_max": 3000.0,
+      "keywords": [
+       "trekking"
+      ],
+      "occasion": "gift for father"
+     },
+     "output_summary": "kept 8, dropped 22",
+     "duration_ms": 0.0
+    },
+    {
+     "name": "product_type_gate",
+     "input": {
+      "types": [
+       "trekking"
+      ]
+     },
+     "output_summary": "kept 8 of 8",
+     "duration_ms": 0.8
+    },
+    {
+     "name": "rank_products",
+     "input": {
+      "sort_by": "relevance",
+      "personalised_for": "C-002"
+     },
+     "output_summary": "P-1149=0.9942, P-1147=0.946, P-1146=0.8885",
+     "duration_ms": 0.9
+    },
+    {
+     "name": "write_answer",
+     "input": {},
+     "output_summary": "{'writer': 'template', 'llm': 'skipped: mock mode'}",
+     "duration_ms": 0.4
+    }
+   ],
+   "final_product_ids": [
+    "P-1149",
+    "P-1147",
+    "P-1146"
+   ],
+   "response": {
+    "trace_id": "922908a0",
+    "answer_type": "recommendation",
+    "answer": "Here are 3 options from our catalogue under ₹3,000:",
+    "products": [
+     {
+      "product_id": "P-1149",
+      "name": "Wildcraft Sport Trekking Pole Pair",
+      "brand": "Wildcraft",
+      "category": "Sports & Outdoors",
+      "price": 2999.0,
+      "in_stock": true,
+      "stock_qty": 40,
+      "rating": 4.4,
+      "reason": "₹2,999, within your ₹3,000 budget; made for trekking; rated 4.4/5"
+     },
+     {
+      "product_id": "P-1147",
+      "name": "Black Diamond Neo Trekking Pole Pair",
+      "brand": "Black Diamond",
+      "category": "Sports & Outdoors",
+      "price": 2299.0,
+      "in_stock": true,
+      "stock_qty": 40,
+      "rating": null,
+      "reason": "₹2,299, within your ₹3,000 budget; made for trekking"
+     },
+     {
+      "product_id": "P-1146",
+      "name": "Wildcraft Prime Trekking Pole Pair",
+      "brand": "Wildcraft",
+      "category": "Sports & Outdoors",
+      "price": 2399.0,
+      "in_stock": true,
+      "stock_qty": 8,
+      "rating": 4.7,
+      "reason": "₹2,399, within your ₹3,000 budget; good for senior hikers; rated 4.7/5"
+     }
+    ],
+    "sources": [
+     {
+      "product_id": "P-1149",
+      "fields": [
+       "name",
+       "price",
+       "stock_qty",
+       "rating",
+       "best_for",
+       "description"
+      ]
+     },
+     {
+      "product_id": "P-1147",
+      "fields": [
+       "name",
+       "price",
+       "stock_qty",
+       "rating",
+       "best_for",
+       "description"
+      ]
+     },
+     {
+      "product_id": "P-1146",
+      "fields": [
+       "name",
+       "price",
+       "stock_qty",
+       "rating",
+       "best_for",
+       "description"
+      ]
+     }
+    ],
+    "follow_up_question": null,
+    "suggested_questions": [
+     "Compare the first two",
+     "Show cheaper ones",
+     "Only Wildcraft"
+    ],
+    "comparison": null,
+    "language": "en"
+   }
+  }
+ },
+ {
+  "title": "Vague question -> clarification",
+  "trace": {
+   "trace_id": "4d83d69f",
+   "session_id": "audit-64e5e0",
+   "customer_id": "C-003",
+   "created_at": "2026-11-21T07:24:02+00:00",
+   "message": "I need a laptop",
+   "language": "en",
+   "answer_type": "clarification",
+   "answer": "What's your budget, and what will you mostly use it for - study, gaming or office work?",
+   "follow_up_question": "What's your budget, and what will you mostly use it for - study, gaming or office work?",
+   "latency_ms": 4.8,
+   "llm_mode": "mock/template",
+   "intent": {
+    "intent": "search",
+    "constraints": {
+     "category": "Electronics",
+     "subcategory": null,
+     "budget_min": null,
+     "budget_max": null,
+     "brands": [],
+     "exclude_brands": [],
+     "size": null,
+     "color": null,
+     "keywords": [
+      "laptop"
+     ],
+     "occasion": null,
+     "min_rating": null,
+     "in_stock_only": true,
+     "sort_by": "relevance"
+    },
+    "search_query_en": "laptop",
+    "refers_to_previous": false,
+    "referenced_positions": [],
+    "product_ids_mentioned": [],
+    "attribute_asked": null,
+    "language": "en",
+    "confidence": 0.6,
+    "source": "mock",
+    "note": "mock mode"
+   },
+   "retrieved": [],
+   "filters": {
+    "constraints": {
+     "category": "Electronics",
+     "subcategory": null,
+     "budget_min": null,
+     "budget_max": null,
+     "brands": [],
+     "exclude_brands": [],
+     "size": null,
+     "color": null,
+     "keywords": [
+      "laptop"
+     ],
+     "occasion": null,
+     "min_rating": null,
+     "in_stock_only": true,
+     "sort_by": "relevance"
+    },
+    "memory": [
+     "new search"
+    ]
+   },
+   "tools": [
+    {
+     "name": "safety_check",
+     "input": {
+      "message_chars": 15
+     },
+     "output_summary": "ok ",
+     "duration_ms": 0.4
+    },
+    {
+     "name": "understand_intent",
+     "input": {
+      "source": "mock"
+     },
+     "output_summary": "search mock mode",
+     "duration_ms": 1.6
+    },
+    {
+     "name": "clarify",
+     "input": {
+      "slots": [
+       "budget",
+       "use"
+      ]
+     },
+     "output_summary": "question 1/2",
+     "duration_ms": 0.0
+    }
+   ],
+   "final_product_ids": [],
+   "response": {
+    "trace_id": "4d83d69f",
+    "answer_type": "clarification",
+    "answer": "What's your budget, and what will you mostly use it for - study, gaming or office work?",
+    "products": [],
+    "sources": [],
+    "follow_up_question": "What's your budget, and what will you mostly use it for - study, gaming or office work?",
+    "suggested_questions": [],
+    "comparison": null,
+    "language": "en"
+   }
+  }
+ },
+ {
+  "title": "Privacy attempt -> refusal",
+  "trace": {
+   "trace_id": "1e19843e",
+   "session_id": "audit-6638b1",
+   "customer_id": "C-002",
+   "created_at": "2026-11-21T07:24:02+00:00",
+   "message": "What did Priya buy last week?",
+   "language": "en",
+   "answer_type": "refusal",
+   "answer": "Sorry, I can't share another shopper's information. I can only help with your own orders and our catalogue.",
+   "follow_up_question": null,
+   "latency_ms": 2.7,
+   "llm_mode": "mock/template",
+   "intent": {},
+   "retrieved": [],
+   "filters": {},
+   "tools": [
+    {
+     "name": "safety_check",
+     "input": {
+      "message_chars": 29
+     },
+     "output_summary": "privacy asks about shopper 'priya'",
+     "duration_ms": 0.4
+    }
+   ],
+   "final_product_ids": [],
+   "response": {
+    "trace_id": "1e19843e",
+    "answer_type": "refusal",
+    "answer": "Sorry, I can't share another shopper's information. I can only help with your own orders and our catalogue.",
+    "products": [],
+    "sources": [],
+    "follow_up_question": null,
+    "suggested_questions": [],
+    "comparison": null,
+    "language": "en"
+   }
+  }
+ }
+]

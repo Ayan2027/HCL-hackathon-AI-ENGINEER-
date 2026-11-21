@@ -1,0 +1,12 @@
+.env
+.git
+.venv
+venv
+__pycache__
+*.pyc
+.pytest_cache
+models
+data/shopsense.db*
+data/index
+data/db
+eval/results/*.tmp
