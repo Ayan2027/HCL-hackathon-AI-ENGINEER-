@@ -1,0 +1,38 @@
+[
+  {
+    "customer_id": "C-001",
+    "name": "Priya Sharma",
+    "city": "Lucknow",
+    "preferred_language": "en",
+    "budget_min": 300,
+    "budget_max": 5000,
+    "preferred_brands": ["Nike", "Roadster"],
+    "preferred_categories": ["Footwear", "Apparel"],
+    "sizes": {"shoe": 7, "apparel": "M"},
+    "persona_note": "Runs on weekends, likes value-for-money brands."
+  },
+  {
+    "customer_id": "C-002",
+    "name": "Rahul Verma",
+    "city": "Prayagraj",
+    "preferred_language": "hinglish",
+    "budget_min": 500,
+    "budget_max": 3000,
+    "preferred_brands": ["Wildcraft", "boAt"],
+    "preferred_categories": ["Sports & Outdoors", "Electronics"],
+    "sizes": {"shoe": 9, "apparel": "L"},
+    "persona_note": "Goes trekking with his father; buys gifts for family."
+  },
+  {
+    "customer_id": "C-003",
+    "name": "Ananya Gupta",
+    "city": "Patna",
+    "preferred_language": "hi",
+    "budget_min": null,
+    "budget_max": null,
+    "preferred_brands": [],
+    "preferred_categories": [],
+    "sizes": {},
+    "persona_note": "Brand-new shopper with no order history."
+  }
+]

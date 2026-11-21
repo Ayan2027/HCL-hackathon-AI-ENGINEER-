@@ -1,0 +1,22 @@
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+env/
+
+# Generated data (rebuilt from data/raw by scripts/load_data.py)
+data/shopsense.db
+data/shopsense.db-*
+data/index/
+models/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
