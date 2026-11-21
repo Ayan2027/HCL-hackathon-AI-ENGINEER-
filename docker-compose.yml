@@ -1,0 +1,65 @@
+# docker compose up --build   ->  UI http://localhost:8501 · API http://localhost:8000/docs
+#
+# Services
+#   db  : creates the SQLite schema and loads data/raw (or data/sample) into a named volume, then exits
+#   api : FastAPI + AI engine; waits for db; healthy when GET /health answers
+#   ui  : Streamlit; waits for a healthy api
+#
+# Settings come from .env in this folder (GROQ_API_KEY, GROQ_MODEL, MOCK_LLM, USE_VECTOR_SEARCH ...).
+# The embedding model is cached in ./models on the host, so it downloads only once.
+
+x-common: &common
+  build: .
+  image: shopsense-ai:latest
+  environment: &env
+    GROQ_API_KEY: ${GROQ_API_KEY:-}
+    GROQ_MODEL: ${GROQ_MODEL:-openai/gpt-oss-120b}
+    MOCK_LLM: ${MOCK_LLM:-true}
+    USE_VECTOR_SEARCH: ${USE_VECTOR_SEARCH:-true}
+    EMBEDDING_MODEL: ${EMBEDDING_MODEL:-sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2}
+    DB_PATH: /app/data/db/shopsense.db
+    INDEX_DIR: /app/data/db/index
+    MODEL_CACHE_DIR: /app/models
+    LOG_LEVEL: ${LOG_LEVEL:-INFO}
+  volumes:
+    - shopsense-db:/app/data/db
+    - ./models:/app/models
+
+services:
+  db:
+    <<: *common
+    command: ["python", "-m", "app.db.bootstrap", "--if-empty"]
+    restart: "no"
+
+  api:
+    <<: *common
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=5)"]
+      interval: 10s
+      timeout: 6s
+      retries: 30
+      start_period: 30s
+    restart: unless-stopped
+
+  ui:
+    <<: *common
+    command: ["streamlit", "run", "ui/streamlit_app.py", "--server.address=0.0.0.0", "--server.port=8501",
+              "--server.headless=true", "--browser.gatherUsageStats=false"]
+    environment:
+      <<: *env
+      API_URL: http://api:8000
+    ports:
+      - "8501:8501"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  shopsense-db:

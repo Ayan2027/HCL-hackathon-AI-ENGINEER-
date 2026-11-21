@@ -1,0 +1,11 @@
+{
+ "mode": "fallback",
+ "model": null,
+ "prompt_file": "scripts/prompts/shopper_prompt.md",
+ "cleanup_report": {
+  "dropped_invalid_order_refs": 0,
+  "topped_up_shoppers": 28,
+  "input_shoppers": 30
+ },
+ "calls": []
+}
