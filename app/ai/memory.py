@@ -37,7 +37,18 @@ def load_state(session_id: str, customer_id: str) -> SessionState:
     except Exception:  # noqa: BLE001 - corrupt state: start clean rather than crash
         state = SessionState(customer_id=customer_id)
     state.customer_id = customer_id
+    _drop_stale_catalogue_refs(state)
     return state
+
+
+def _drop_stale_catalogue_refs(state: SessionState) -> None:
+    """After a catalogue change, a saved session may point at products or categories that are no
+    longer sold. Drop those so they can never resurface in results or filters."""
+    if state.last_result_ids:
+        active = {p["product_id"] for p in repo.get_products(state.last_result_ids)}
+        state.last_result_ids = [pid for pid in state.last_result_ids if pid in active]
+    if state.constraints.category and state.constraints.category not in repo.list_categories():
+        state.constraints.category = None
 
 
 def save_state(session_id: str, state: SessionState) -> None:

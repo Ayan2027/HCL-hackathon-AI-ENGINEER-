@@ -4,7 +4,7 @@ import json
 import pytest
 from pydantic import ValidationError
 
-from app.config import CATEGORIES, settings
+from app.config import LEGACY_CATEGORIES as CATEGORIES, settings  # sample fixture = legacy catalogue
 from app.db.database import db_session, fts5_available, table_counts
 from app.schemas import (
     ChatRequest,

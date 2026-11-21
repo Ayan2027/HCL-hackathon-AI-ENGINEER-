@@ -1,13 +1,18 @@
 """
 Load JSON data into SQLite (Member 2).
 
-    python -m app.db.bootstrap            # load data/raw (or data/sample) if the DB is empty
-    python -m app.db.bootstrap --reset    # wipe the DB and reload
+    python -m app.db.bootstrap --if-empty   # first-time setup; does nothing if data exists
+    python -m app.db.bootstrap --reset      # DESTRUCTIVE: delete the DB file and reload everything
 
-Source folder: data/raw/ when products.json exists there (Member 4's full
-dataset), otherwise data/sample/ (12 products for early development).
-The API also calls load_if_empty() at startup, so `docker compose up`
-works on a fresh machine with no manual steps.
+A fresh database is built in two steps:
+  1. shoppers + orders (synthetic demo data) and the earlier sample products they
+     reference, from data/raw/ (or data/sample/ for development);
+  2. the ShopMate catalogue import (app/db/catalog_import.py), which makes
+     data/shopmate_products.json the active catalogue and keeps the old products
+     only as archived order-history records.
+To move an EXISTING database to the ShopMate catalogue without a reset, run
+    python -m app.db.catalog_import
+The API calls load_if_empty() at startup, so `docker compose up` works on a fresh machine.
 """
 import argparse
 import json
@@ -63,23 +68,44 @@ def load_all(folder: Path = None) -> Dict[str, int]:
 
 
 def load_if_empty() -> Dict[str, int]:
+    """Build a fresh database. Never touches a database that already has products."""
     init_db()
     if table_counts()["products"] > 0:
         return {"skipped": 1}
-    return load_all()
+    result = load_all()
+    result.update(_import_shopmate())
+    return result
+
+
+def _import_shopmate() -> Dict[str, int]:
+    if not settings.catalog_json.exists():
+        logger.warning("ShopMate catalogue %s not found; keeping the sample catalogue", settings.catalog_json)
+        return {"shopmate_import": 0}
+    from app.db.catalog_import import import_catalog   # local import: avoids a cycle at module load
+
+    report = import_catalog(backup=False)
+    return {"shopmate_import": report["after"]["products_active"],
+            "archived_legacy_products": report["after"]["products_archived"]}
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Load catalogue, shoppers and orders into SQLite")
-    parser.add_argument("--reset", action="store_true", help="delete the database first")
+    parser.add_argument("--reset", action="store_true", help="DESTRUCTIVE: delete the database first")
+    parser.add_argument("--if-empty", action="store_true", help="load only if the database has no products")
     parser.add_argument("--source", type=Path, help="folder with products.json, customers.json, orders.json")
     args = parser.parse_args()
 
+    if args.if_empty and not args.reset:
+        print(json.dumps(load_if_empty(), indent=2))
+        print("Table counts:", table_counts())
+        return 0
     if args.reset:
         reset_db()
     else:
         init_db()
     result = load_all(args.source)
+    if not args.source:
+        result.update(_import_shopmate())
     print(json.dumps(result, indent=2))
     print("Table counts:", table_counts())
     print("Tip: the FAISS index rebuilds automatically when the API starts.")

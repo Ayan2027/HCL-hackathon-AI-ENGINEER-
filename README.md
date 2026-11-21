@@ -20,17 +20,20 @@ docker compose up --build
 
 Compose starts three services. **db** creates the SQLite schema and loads the data, then exits. **api** waits for it. **ui** waits for a healthy API.
 
-### Option B: Local (development)
-```bash
-python -m venv .venv && source .venv/bin/activate        # Windows: .venv\Scripts\activate
+### Option B: Local (development, Python 3.12)
+Full Windows PowerShell steps, with the reasons behind them: [docs/SETUP.md](docs/SETUP.md#0-shopmate-catalogue-on-windows-powershell--current-setup).
+```powershell
+py -V:3.12 -m venv .venv312; .\.venv312\Scripts\Activate.ps1   # faiss-cpu has no wheel for Python 3.15
 pip install torch --index-url https://download.pytorch.org/whl/cpu
 pip install -r requirements.txt
-cp .env.example .env
-python -m scripts.download_model          # embedding model, about 470 MB, once
-python -m app.db.bootstrap --reset        # load data/raw into SQLite
-uvicorn app.main:app --port 8000          # terminal 1
-streamlit run ui/streamlit_app.py         # terminal 2
-pytest                                    # 93 tests
+Copy-Item .env.example .env                  # add GROQ_API_KEY; MOCK_LLM=true for offline
+python -m app.db.bootstrap --if-empty        # fresh machine only: shoppers/orders + ShopMate catalogue
+python -m app.db.catalog_import              # existing DB: back up, then import data/shopmate_products.json
+python -m scripts.download_model             # embedding model, about 470 MB, once
+python -m scripts.build_index                # FAISS index from the active catalogue
+uvicorn app.main:app --port 8000             # terminal 1
+streamlit run ui/streamlit_app.py            # terminal 2
+python -m pytest                             # 134 tests (133 + 1 skipped without faiss)
 ```
 
 ### Rebuild the data and the evaluation
@@ -39,8 +42,8 @@ python -m scripts.generate_catalog        # 279 products (template generator, se
 python -m scripts.generate_shoppers       # 30 shoppers + orders via Groq (--offline = seeded fallback)
 python -m scripts.validate_data           # schema + every order points at a real product
 python -m scripts.build_eval_set          # 50 questions built from the data
-python -m app.db.bootstrap --reset
-python -m scripts.run_eval                # needs the API running; or --inprocess
+python -m app.db.bootstrap --reset        # DESTRUCTIVE: rebuilds the DB (legacy data + ShopMate import)
+python -m scripts.run_eval                # legacy eval set; needs the API running; or --inprocess
 python -m scripts.export_audit_samples    # docs/AUDIT_SAMPLES.md from real traces
 ```
 
@@ -52,10 +55,11 @@ python -m scripts.export_audit_samples    # docs/AUDIT_SAMPLES.md from real trac
 Streamlit UI ──HTTP──► FastAPI ──► orchestrator.handle_chat()
                                      1  session memory (bound to customer_id)        code
                                      2  privacy + injection guard                     code
-                                     3  intent JSON (Groq LLM, regex fallback)        LLM
+                                     3  intent JSON (Groq LLM, regex fallback;        LLM
+                                        "A vs B" wording is always compare - code)
                                      4  route: search/refine/compare/stock/fact/...   code
                                      5  merge memory, clarify (max 2 in a row)        code
-                                     6  hybrid retrieval: SQLite FTS5 + FAISS         code
+                                     6  hybrid retrieval: FTS5 + FAISS, RRF (k=60)    code
                                      7  exact filters: budget, brand, size, stock     code
                                      8  product-type gate + rank by fit               code
                                      9  answer from fact sheet + grounding guard      LLM (template fallback)
@@ -68,9 +72,9 @@ Streamlit UI ──HTTP──► FastAPI ──► orchestrator.handle_chat()
 | UI | Streamlit | Chat, cards and tables in pure Python |
 | API | FastAPI | Typed contracts (Pydantic) and auto `/docs` |
 | LLM | **Groq** `openai/gpt-oss-120b` (configurable) | See *Stack change* below |
-| Retrieval | SQLite FTS5 (BM25) + FAISS (Sentence Transformers `paraphrase-multilingual-MiniLM-L12-v2`) | Keywords catch "Nike / size 9"; vectors catch meaning and Hindi |
+| Retrieval | SQLite FTS5 (BM25) + FAISS (Sentence Transformers `paraphrase-multilingual-MiniLM-L12-v2`), fused with Reciprocal Rank Fusion | Keywords catch brands and model numbers; vectors catch meaning and Hindi. One vector per product from its `embedding_text`; price/stock/rating are filtered in code, never embedded |
 | Storage | SQLite | One file; keyword index lives in the same DB, so it is always in sync |
-| Tests | Pytest | 93 tests in mock mode, no network needed |
+| Tests | Pytest | 134 tests in mock mode, no network needed (FAISS test needs Python 3.12) |
 
 **Stack change (guide section 5):** the guide suggests a local model via Ollama. We use the hosted **Groq** API because it answers in about 1 s without a local GPU. `MOCK_LLM=true` keeps the whole system working offline, and the model is one `.env` setting. Groq retired `llama-3.3-70b-versatile` on 16 Aug 2026, and `openai/gpt-oss-120b` is its recommended replacement. `python -m scripts.check_setup` lists the models your key can use.
 
@@ -86,7 +90,7 @@ Streamlit UI ──HTTP──► FastAPI ──► orchestrator.handle_chat()
 | GET | `/products/{id}` | One product straight from SQLite (judges verify claims) |
 | POST | `/ingest` | `{products:[{product_id, ...fields}]}`: add, or merge-update. The next answer reflects it |
 | GET | `/trace/{trace_id}` | Replay: intent, retrieved candidates, filters with drop reasons, tools with timings, answer |
-| GET | `/health` | 200 when ready; product count, vector count, LLM mode |
+| GET | `/health` | 200 when ready; active products, vectors, `retrieval_mode` (hybrid/keyword), `vector_status`, LLM mode, archived products, `inventory_simulated` |
 | GET | `/products`, `/customers` | Browse with the same exact filters; demo login list (ID, name, language only) |
 
 `answer_type` is one of `recommendation · comparison · clarification · product_fact · not_found · refusal`.
@@ -113,12 +117,28 @@ Streamlit UI ──HTTP──► FastAPI ──► orchestrator.handle_chat()
 ---
 
 ## Data
-- **Catalogue:** 279 invented products in 6 categories, deliberately messy. Details in [docs/DATA_NOTE.md](docs/DATA_NOTE.md).
-- **Shoppers:** 30 shoppers with 87 orders, generated by an LLM with the prompt saved verbatim ([scripts/prompts/shopper_prompt.md](scripts/prompts/shopper_prompt.md)). The model and raw replies are logged in `data/raw/generation_log.json`.
+- **Catalogue (active):** the ShopMate catalogue, `data/shopmate_products.json` (source of truth) and
+  `data/shopmate_products.csv` (cross-checked field by field). 300 products, 6 categories x 50:
+  Mobile & Tablet Accessories, Computers & Networking, Watches, Kitchen & Dining, Home Furnishing,
+  Beauty & Personal Care. Product text is from a public Flipkart sample dataset (provenance kept per row);
+  288 English, 6 Hindi and 6 Hinglish descriptions. 268 products have no rating and 21 no brand - these
+  stay missing and show as "Not available in catalogue". Imported with `python -m app.db.catalog_import`
+  (validated, transactional, idempotent, with a backup); see [docs/SETUP.md](docs/SETUP.md).
+- **Stock is simulated demo inventory** (27 products have zero stock and are never recommended). Answers
+  and the UI say it is simulated.
+- **Shoppers:** 30 synthetic shoppers with 87 synthetic orders, generated by an LLM for the earlier sample
+  catalogue ([scripts/prompts/shopper_prompt.md](scripts/prompts/shopper_prompt.md), raw replies in
+  `data/raw/generation_log.json`). Their orders reference 77 products of that earlier catalogue; those rows
+  are kept as **archived** records only for order history (not searchable) and none is mapped onto a
+  ShopMate product. The earlier 279-product generator is still in `scripts/generate_catalog.py`
+  ([docs/DATA_NOTE.md](docs/DATA_NOTE.md)).
 - **No real customer data** is used anywhere.
 
 ## Evaluation
-See [docs/EVAL_REPORT.md](docs/EVAL_REPORT.md). It is generated by the script and lists the mode it ran in and every failure.
+See [docs/EVAL_REPORT.md](docs/EVAL_REPORT.md) (legacy 50-question set, earlier catalogue). Deterministic checks
+for the ShopMate catalogue - import, filters, out-of-stock exclusion, comparison (incl. "Nike vs Adidas"),
+missing ratings/brands, follow-ups, Hindi/Hinglish, no-results, catalogue prompt injection - are in
+[tests/test_shopmate.py](tests/test_shopmate.py).
 
 ## Repository map
 ```
@@ -128,11 +148,12 @@ app/db/         schema.sql, database, repository, bootstrap (Member 2)
 app/tools/      exact catalogue tools (Member 2)
 ui/             Streamlit app (Member 3)
 scripts/        data generation, validation, eval, audit export, setup checks (Member 4)
-data/raw/       generated catalogue, shoppers, orders, generation log
+data/           shopmate_products.json/.csv (active catalogue), shopsense.db, index/, backups/
+data/raw/       earlier generated catalogue, shoppers, orders, generation log
 data/sample/    12-product dev dataset used by the tests
 eval/           eval_set.json and results/
 docs/           contracts, member guides, data note, eval report, audit samples, AI usage, contributions
-tests/          93 pytest tests
+tests/          134 pytest tests (test_shopmate.py = ShopMate catalogue)
 ```
 
 ## Team
