@@ -3,6 +3,7 @@ Load JSON data into SQLite (Member 2).
 
     python -m app.db.bootstrap            # load data/raw (or data/sample) if the DB is empty
     python -m app.db.bootstrap --reset    # wipe the DB and reload
+    python -m app.db.bootstrap --if-empty # used by docker compose "db" service
 
 Source folder: data/raw/ when products.json exists there (Member 4's full
 dataset), otherwise data/sample/ (12 products for early development).
@@ -73,8 +74,12 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Load catalogue, shoppers and orders into SQLite")
     parser.add_argument("--reset", action="store_true", help="delete the database first")
     parser.add_argument("--source", type=Path, help="folder with products.json, customers.json, orders.json")
+    parser.add_argument("--if-empty", action="store_true", help="load only when the products table is empty")
     args = parser.parse_args()
 
+    if args.if_empty:
+        print(json.dumps(load_if_empty()), "| counts:", table_counts())
+        return 0
     if args.reset:
         reset_db()
     else:

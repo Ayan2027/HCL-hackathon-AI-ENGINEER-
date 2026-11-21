@@ -21,7 +21,9 @@ STRONG_HINGLISH = {
     "hoga", "hogi", "kya", "nahi", "nahin", "joota", "joote", "jootey", "kapde", "liye",
 }
 WEAK_HINGLISH = {"hai", "hain", "ka", "ki", "ke", "mein", "aur", "ye", "yeh", "woh", "se", "ko",
-                 "bhi", "ek", "koi", "kam", "zyada", "jyada", "papa", "bhai", "tak", "andar", "sirf"}
+                 "bhi", "ek", "koi", "kam", "zyada", "jyada", "papa", "bhai", "tak", "andar", "sirf",
+                 "kuch", "karni", "karna", "lena", "leni", "dekhna", "hoon", "hu", "mai", "tha", "thi",
+                 "chahte", "chahiye", "accha", "acha", "achha", "badiya", "wala", "wali"}
 
 # Hindi / Hinglish -> English search words
 TRANSLATIONS: Dict[str, str] = {

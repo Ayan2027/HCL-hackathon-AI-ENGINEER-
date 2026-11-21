@@ -6,18 +6,51 @@ final = retrieval_fit                      (hybrid score, 0..1)
       + 0.05 * rating / 5                  (tie-breaker only)
       + 0.05 if THIS shopper bought / prefers the brand (personalisation, own data only)
 
+Before scoring, product_type_gate() keeps only the product type the shopper named
+("laptop for gaming" can never return a gaming phone).
 Then, if the shopper asked for "cheap" / "best rated", the 10 best-fitting
 products are re-sorted by that field with code (tools.sort_products).
 """
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
+from app.ai.intent import CATEGORY_WORDS
 from app.schemas import Constraints
 from app.tools.catalog_tools import sort_products
+
+# Words that name a product type ("laptop", "speaker", "shoes"), taken from the intent vocabulary
+PRODUCT_NOUNS = {w for words in CATEGORY_WORDS.values() for w in words}
 
 FIT_BONUS = 0.10
 RATING_WEIGHT = 0.05
 PERSONAL_BONUS = 0.05
 SORT_POOL = 10
+
+
+def _stem(word: str) -> str:
+    word = word.lower()
+    for suffix in ("es", "s"):
+        if word.endswith(suffix) and len(word) > len(suffix) + 2:
+            return word[: -len(suffix)]
+    return word
+
+
+def product_type_gate(products: List[Dict[str, Any]], constraints: Constraints) -> Tuple[List[Dict[str, Any]], List[str]]:
+    """If the shopper named a product type ("laptop"), keep only products of that type.
+    Products are scored by how many of the named types appear in their name / subcategory / best_for;
+    only the best-matching group is kept. Returns (products, nouns used)."""
+    nouns = [k for k in constraints.keywords if k.lower() in PRODUCT_NOUNS]
+    if not nouns or not products:
+        return products, []
+    stems = {_stem(n) for n in nouns}
+
+    def hits(p: Dict[str, Any]) -> int:
+        text = " ".join(str(p.get(f) or "") for f in ("name", "subcategory", "best_for")).lower()
+        return sum(1 for s in stems if s in text)
+
+    best = max(hits(p) for p in products)
+    if best == 0:
+        return products, []
+    return [p for p in products if hits(p) == best], sorted(stems)
 
 
 def personal_brands(customer: Optional[Dict[str, Any]], orders: List[Dict[str, Any]]) -> List[str]:

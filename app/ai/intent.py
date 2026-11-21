@@ -73,6 +73,7 @@ FILLER_WORDS = {
     "number", "no", "between", "at", "least", "max", "maximum", "minimum", "min", "from", "by", "your",
     "who", "he", "she", "they", "him", "her", "them", "his", "their", "loves", "go", "goes", "going",
     "ke", "ka", "ki", "liye", "wala", "wali", "wale", "ek", "koi", "sirf", "aur", "se", "kam", "tak",
+    "waist", "inch", "inches",
 }
 
 _NUM = r"(?:₹|rs\.?|inr)?\s*(\d+(?:[.,]\d+)*)\s*(k|thousand|hazar|hazaar|हज़ार|हजार|lakh|lac|लाख)?"
@@ -91,6 +92,8 @@ _SIZE_PATTERNS = [
     re.compile(r"\b(?:uk|us|euro?)\s*([0-9]{1,2})\b", re.I),
     re.compile(r"\b([0-9]{1,2})\s*(?:number|no\.?)\s*(?:ka|ke|ki|wala|wale)\b", re.I),
     re.compile(r"\b(xxxl|xxl|xl|xs)\b", re.I),
+    re.compile(r"\b(2[6-9]|3[0-9]|4[0-4])\s*(?:inch(?:es)?\s*)?waist\b", re.I),
+    re.compile(r"\bwaist\s*(2[6-9]|3[0-9]|4[0-4])\b", re.I),
 ]
 _PRODUCT_ID = re.compile(r"\bP-\d{4}\b", re.I)
 _MIN_RATING = re.compile(r"(?:rated|rating)\s*(?:above|over|at least|more than)?\s*(\d(?:\.\d)?)|(\d(?:\.\d)?)\s*(?:\+\s*)?stars?", re.I)
@@ -119,6 +122,7 @@ _FACT_WORDS = re.compile(
     r"\b(price|cost|kitna|kitne|kitni|how much|what is|what's|battery|warranty|material|weight|wajan|vajan|"
     r"sizes?|colou?rs?|rating|reviews?|waterproof|capacity|specs?|specifications?|details|tell me about|"
     r"kya hai|kaisa hai|daam|keemat)\b|कीमत|दाम|कितना|कितने", re.I)
+_YES_NO_QUESTION = re.compile(r"^\s*(is|are|does|can|will|kya)\s+(the|this|that|it|ye|yeh)\b", re.I)
 _CHITCHAT = re.compile(r"^\s*(hi+|hello|hey|namaste|namaskar|thanks|thank you|thank u|thx|ok|okay|bye|"
                        r"shukriya|dhanyavad|good morning|good evening|नमस्ते|धन्यवाद)[\s!.]*$", re.I)
 _SORT_ASC = re.compile(r"\b(cheap|cheaper|cheapest|budget|affordable|low price|lowest price|inexpensive|"
@@ -252,6 +256,10 @@ def detect_category(text_en: str) -> Tuple[Optional[str], List[str]]:
     return best, best_hits
 
 
+# Brands that are also everyday words: only a brand when written like one ("Noise", not "noise cancellation")
+COMMON_WORD_BRANDS = {"noise", "plum", "engage", "w", "victor", "spaces", "core", "go", "kent", "mi"}
+
+
 def detect_brands(text: str, known_brands: List[str]) -> Tuple[List[str], List[str]]:
     """Return (include_brands, exclude_brands) by matching brand names from the database."""
     include: List[str] = []
@@ -261,6 +269,11 @@ def detect_brands(text: str, known_brands: List[str]) -> Tuple[List[str], List[s
         m = re.search(rf"(?<![a-z0-9]){re.escape(brand.lower())}(?![a-z0-9])", lowered)
         if not m:
             continue
+        if brand.lower() in COMMON_WORD_BRANDS:
+            original = text[m.start():m.end()]
+            following = lowered[m.end():m.end() + 12].strip()
+            if not original[:1].isupper() or following.startswith(("cancel", "free", "less")):
+                continue
         before = lowered[max(0, m.start() - 20):m.start()]
         after = lowered[m.end():m.end() + 12]
         negated = _NEGATION.search(before) or re.search(r"^\s*(nahi|mat|नहीं)", after)
@@ -343,6 +356,9 @@ def mock_parse(message: str, state: SessionState, language: str, known_brands: L
         intent = "stock_check"
         refers_to_previous = refers_to_previous or not product_ids
     elif (product_ids or (refers_to_previous and not category)) and _FACT_WORDS.search(text):
+        intent = "product_fact"
+    elif (_YES_NO_QUESTION.search(text) and (category or content) and text.rstrip().endswith("?")
+          and not _COMPARE.search(combined)):
         intent = "product_fact"
     elif any(_phrase_in(combined, w) for w in UNSOLD_WORDS) and not category:
         intent = "out_of_scope"

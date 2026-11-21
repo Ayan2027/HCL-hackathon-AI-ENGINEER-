@@ -44,8 +44,10 @@ def attributes_to_text(attributes: Dict[str, Any]) -> str:
         if isinstance(value, (list, tuple)):
             value = " ".join(str(v) for v in value)
         elif isinstance(value, bool):
-            value = "yes" if value else "no"
-        parts.append(f"{str(key).replace('_', ' ')} {value}")
+            if not value:
+                continue                      # don't make "waterproof: False" match "waterproof"
+            value = ""
+        parts.append(f"{str(key).replace('_', ' ')} {value}".strip())
     return " ".join(parts)
 
 
